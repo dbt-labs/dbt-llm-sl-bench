@@ -1,0 +1,4 @@
+name: llm_bench
+type: duckdb
+options:
+  filename: ../../../llm_bench.db

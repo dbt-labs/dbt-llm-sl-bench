@@ -1,0 +1,186 @@
+"""Unit tests for configuration classes."""
+
+import pytest
+
+from src.llm_bench.config import (
+    BaseConfig,
+    ConfigurationManager,
+    MCPConfig,
+    ModelName,
+    SQLConfig,
+    SemanticLayerConfig,
+)
+
+
+class TestModelName:
+    """Tests for ModelName enum"""
+
+    def test_model_name_values(self):
+        """Test that ModelName enum has expected values"""
+        assert ModelName.GPT_5.value == "gpt-5"
+        assert ModelName.GPT_5_MINI.value == "gpt-5-mini"
+        assert ModelName.GPT_5_NANO.value == "gpt-5-nano"
+        assert ModelName.CLAUDE_SONNET_4.value == "claude-sonnet-4-20250514"
+        assert ModelName.CLAUDE_SONNET_4_5.value == "claude-sonnet-4-5"
+
+    def test_model_name_members(self):
+        """Test that all expected model names exist"""
+        expected_models = [
+            "GPT_5_NANO", "GPT_5_MINI", "GPT_5",
+            "CLAUDE_SONNET_3_7", "CLAUDE_SONNET_4", "CLAUDE_SONNET_4_5",
+            "CLAUDE_OPUS_4_1"
+        ]
+        for model in expected_models:
+            assert hasattr(ModelName, model)
+
+
+class TestBaseConfig:
+    """Tests for BaseConfig class"""
+
+    def test_base_config_initialization(self, base_config):
+        """Test that BaseConfig initializes with default values"""
+        assert base_config.model_name == ModelName.GPT_5
+        assert base_config.use_pydantic_ai is True
+        assert base_config.number_of_iterations == 1
+        assert base_config.database_file == "test_llm_bench.db"
+
+    def test_library_name_pydantic_ai(self):
+        """Test library_name property returns pydantic-ai"""
+        config = BaseConfig(use_pydantic_ai=True)
+        assert config.library_name == "pydantic-ai"
+
+    def test_library_name_openai_sdk(self):
+        """Test library_name property returns openai-sdk"""
+        config = BaseConfig(use_pydantic_ai=False)
+        assert config.library_name == "openai-sdk"
+
+    def test_jdbc_url_generation(self):
+        """Test that JDBC URL is generated correctly"""
+        config = BaseConfig(
+            sl_url="test.dbt.com",
+            environment_id="123",
+            dbt_sl_service_token="test_token"
+        )
+        expected_url = "jdbc:arrow-flight-sql://test.dbt.com:443?environmentId=123&token=test_token"
+        assert config.jdbc_url == expected_url
+
+    def test_selected_challenges_default(self):
+        """Test that selected_challenges has default values"""
+        config = BaseConfig()
+        assert len(config.selected_challenges) == 11
+        assert "How many policies do we have?" in config.selected_challenges
+
+    def test_custom_challenges(self):
+        """Test that custom challenges can be set"""
+        custom_challenges = ["Custom question 1", "Custom question 2"]
+        config = BaseConfig(selected_challenges=custom_challenges)
+        assert config.selected_challenges == custom_challenges
+
+
+class TestSemanticLayerConfig:
+    """Tests for SemanticLayerConfig class"""
+
+    def test_semantic_layer_config_initialization(self, semantic_layer_config):
+        """Test that SemanticLayerConfig initializes correctly"""
+        assert semantic_layer_config.strategy == "semantic_layer"
+        assert isinstance(semantic_layer_config, BaseConfig)
+
+    def test_semantic_layer_config_inherits_base(self):
+        """Test that SemanticLayerConfig inherits from BaseConfig"""
+        config = SemanticLayerConfig()
+        assert hasattr(config, 'model_name')
+        assert hasattr(config, 'use_pydantic_ai')
+        assert hasattr(config, 'jdbc_url')
+
+
+class TestMCPConfig:
+    """Tests for MCPConfig class"""
+
+    def test_mcp_config_initialization(self, mcp_config):
+        """Test that MCPConfig initializes correctly"""
+        assert mcp_config.strategy == "mcp"
+        assert isinstance(mcp_config, BaseConfig)
+
+    def test_mcp_config_mcp_url(self):
+        """Test that MCPConfig has mcp_url property"""
+        config = MCPConfig()
+        assert hasattr(config, 'mcp_url')
+        assert "dbt.com" in config.mcp_url
+
+
+class TestSQLConfig:
+    """Tests for SQLConfig class"""
+
+    def test_sql_config_initialization(self, sql_config):
+        """Test that SQLConfig initializes correctly"""
+        assert sql_config.strategy == "sql"
+        assert isinstance(sql_config, BaseConfig)
+
+    def test_sql_config_ddl_file(self):
+        """Test that SQLConfig has ddl_file property"""
+        config = SQLConfig()
+        assert hasattr(config, 'ddl_file')
+        assert config.ddl_file == "ACME_small.ddl"
+
+
+class TestConfigurationManager:
+    """Tests for ConfigurationManager class"""
+
+    def test_configuration_manager_initialization(self):
+        """Test that ConfigurationManager initializes with all strategies"""
+        manager = ConfigurationManager()
+        assert 'semantic_layer' in manager._configs
+        assert 'mcp' in manager._configs
+        assert 'sql' in manager._configs
+
+    def test_get_config_semantic_layer(self):
+        """Test getting semantic layer config"""
+        manager = ConfigurationManager()
+        config = manager.get_config('semantic_layer')
+        assert isinstance(config, SemanticLayerConfig)
+        assert config.strategy == "semantic_layer"
+
+    def test_get_config_mcp(self):
+        """Test getting MCP config"""
+        manager = ConfigurationManager()
+        config = manager.get_config('mcp')
+        assert isinstance(config, MCPConfig)
+        assert config.strategy == "mcp"
+
+    def test_get_config_sql(self):
+        """Test getting SQL config"""
+        manager = ConfigurationManager()
+        config = manager.get_config('sql')
+        assert isinstance(config, SQLConfig)
+        assert config.strategy == "sql"
+
+    def test_get_config_unknown_strategy(self):
+        """Test that getting unknown strategy raises ValueError"""
+        manager = ConfigurationManager()
+        with pytest.raises(ValueError, match="Unknown strategy"):
+            manager.get_config('unknown')
+
+    def test_get_default_config(self):
+        """Test getting default config"""
+        manager = ConfigurationManager()
+        config = manager.get_default_config()
+        assert isinstance(config, SemanticLayerConfig)
+
+    def test_set_default_config(self):
+        """Test setting default config"""
+        manager = ConfigurationManager()
+        manager.set_default_config('sql')
+        config = manager.get_default_config()
+        assert isinstance(config, SQLConfig)
+
+    def test_create_services(self):
+        """Test creating services from config"""
+        manager = ConfigurationManager()
+        config = manager.get_config('sql')
+        services = manager.create_services(config)
+
+        assert services.config == config
+        assert services.database_service is not None
+        assert services.query_service is not None
+        assert services.comparison_service is not None
+        assert services.factory is not None
