@@ -1,15 +1,14 @@
 """Unit tests for comparison service."""
 
 import pandas as pd
-import pytest
 
-from src.llm_bench.services.comparison import ComparisonService
+from llm_bench.services.comparison import ComparisonService
 
 
 class TestComparisonService:
     """Tests for ComparisonService"""
 
-    def test_compare_identical_dataframes(self):
+    def test_compare_identical_dataframes(self) -> None:
         """Test comparing identical dataframes"""
         df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         df2 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
@@ -18,7 +17,7 @@ class TestComparisonService:
         assert result.is_equivalent is True
         assert result.error is None
 
-    def test_compare_reordered_columns(self):
+    def test_compare_reordered_columns(self) -> None:
         """Test comparing dataframes with reordered columns"""
         df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         df2 = pd.DataFrame({"b": [4, 5, 6], "a": [1, 2, 3]})
@@ -27,7 +26,7 @@ class TestComparisonService:
         assert result.is_equivalent is True
         assert result.error is None
 
-    def test_compare_reordered_rows(self):
+    def test_compare_reordered_rows(self) -> None:
         """Test comparing dataframes with reordered rows"""
         df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         df2 = pd.DataFrame({"a": [3, 1, 2], "b": [6, 4, 5]})
@@ -36,7 +35,7 @@ class TestComparisonService:
         assert result.is_equivalent is True
         assert result.error is None
 
-    def test_compare_different_values(self):
+    def test_compare_different_values(self) -> None:
         """Test comparing dataframes with different values"""
         df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         df2 = pd.DataFrame({"a": [1, 2, 4], "b": [4, 5, 6]})
@@ -45,7 +44,7 @@ class TestComparisonService:
         assert result.is_equivalent is False
         assert result.error is None
 
-    def test_compare_extra_columns(self):
+    def test_compare_extra_columns(self) -> None:
         """Test comparing dataframes where comparison has extra columns"""
         df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         df2 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]})
@@ -55,7 +54,7 @@ class TestComparisonService:
         assert result.is_equivalent is True
         assert result.error is None
 
-    def test_compare_missing_columns(self):
+    def test_compare_missing_columns(self) -> None:
         """Test comparing dataframes where comparison is missing columns"""
         df1 = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         df2 = pd.DataFrame({"a": [1, 2, 3]})
@@ -65,7 +64,7 @@ class TestComparisonService:
         assert result.is_equivalent is False
         assert result.error is not None
 
-    def test_compare_different_types(self):
+    def test_compare_different_types(self) -> None:
         """Test comparing dataframes with different column types"""
         df1 = pd.DataFrame({"a": [1, 2, 3]})
         df2 = pd.DataFrame({"a": ["1", "2", "3"]})
@@ -73,7 +72,7 @@ class TestComparisonService:
         result = ComparisonService.compare_query_results(df1, df2)
         assert result.is_equivalent is False
 
-    def test_compare_empty_dataframes(self):
+    def test_compare_empty_dataframes(self) -> None:
         """Test comparing empty dataframes"""
         df1 = pd.DataFrame()
         df2 = pd.DataFrame()
@@ -81,7 +80,7 @@ class TestComparisonService:
         result = ComparisonService.compare_query_results(df1, df2)
         assert result.is_equivalent is True
 
-    def test_compare_single_column(self):
+    def test_compare_single_column(self) -> None:
         """Test comparing dataframes with single column"""
         df1 = pd.DataFrame({"count": [42]})
         df2 = pd.DataFrame({"count": [42]})
@@ -89,7 +88,7 @@ class TestComparisonService:
         result = ComparisonService.compare_query_results(df1, df2)
         assert result.is_equivalent is True
 
-    def test_compare_renamed_columns(self):
+    def test_compare_renamed_columns(self) -> None:
         """Test comparing dataframes with different column names but same values"""
         df1 = pd.DataFrame({"policy_count": [42]})
         df2 = pd.DataFrame({"total_policies": [42]})
