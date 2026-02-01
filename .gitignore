@@ -18,4 +18,4 @@ wheels/
 *.csv
 
 # Node modules
-node_modules/
+node_modules/.mcp.env
