@@ -2,11 +2,14 @@
 
 import time
 from abc import ABC, abstractmethod
-from typing import Tuple, Union
 
-from ..config.base import BaseConfig
-from ..models.requests import QueryRequest
-from ..models.results import QueryGenerationResult
+from loguru import logger
+
+from llm_bench.config.base import BaseConfig
+from llm_bench.config.settings import settings
+from llm_bench.executors.prompt_executor import execute_prompt
+from llm_bench.models.requests import QueryRequest
+from llm_bench.models.results import QueryGenerationResult
 
 
 class QueryStrategy(ABC):
@@ -21,16 +24,20 @@ class QueryStrategy(ABC):
 class SemanticLayerQueryStrategy(QueryStrategy):
     """Strategy for generating semantic layer queries"""
 
-    def __init__(self, config: BaseConfig):
+    def __init__(self, config: BaseConfig) -> None:
         self.config = config
 
     def generate_query(self, request: QueryRequest) -> QueryGenerationResult:
-        from ..executors.prompt_executor import execute_prompt
-
         start_time = time.time()
+        logger.debug(f"[SemanticLayer] Starting query generation for: {request.question[:50]}...")
 
-        if not request.context or not all(k in request.context for k in ['metric_details', 'dimension_details', 'entity_details']):
-            error = ValueError("SemanticLayerQueryStrategy requires metric_details, dimension_details, and entity_details in context")
+        if not request.context or not all(
+            k in request.context for k in ["metric_details", "dimension_details", "entity_details"]
+        ):
+            error = ValueError(
+                "SemanticLayerQueryStrategy requires metric_details, dimension_details, and entity_details in context"
+            )
+            logger.error("[SemanticLayer] Missing required context")
             return QueryGenerationResult.error_result(error, "", time.time() - start_time)
 
         prompt = r"""
@@ -41,6 +48,12 @@ class SemanticLayerQueryStrategy(QueryStrategy):
             group_by=[Dimension('primary_entity__dimension').grain('month'), 'customer__customer_type'],
             where="{{ Dimension('primary_entity__filter_dim_1') }} = 'A' AND {{ Dimension('secondary_entity__filter_dim_2') }} = False"
             }}
+
+        or
+
+        select * from {{
+            semantic_layer.query(metrics=['food_order_amount'])
+        }}
 
         Below is a markdown table describing the parameters available when building a query
         | Parameter | Description  | Example    | Type |
@@ -57,13 +70,13 @@ class SemanticLayerQueryStrategy(QueryStrategy):
 
         """
 
-        prompt += request.context['metric_details']
+        prompt += request.context["metric_details"]
         prompt += """
             Dimensions:
 
         """
-        prompt += request.context['dimension_details']
-        prompt += request.context['entity_details']
+        prompt += request.context["dimension_details"]
+        prompt += request.context["entity_details"]
         prompt += """
         Write a query to answer the following question. Do not explain the query, and do not say 'here is the query'. Return just the query, so it can be run
         verbatim from your response.
@@ -73,75 +86,90 @@ class SemanticLayerQueryStrategy(QueryStrategy):
         prompt += request.question
 
         try:
+            logger.debug("[SemanticLayer] Executing prompt via LLM...")
             query_result = execute_prompt(prompt, self.config)
             timing = time.time() - start_time
-            print(f"Generated SL query (took {timing:.2f}s)")
-            print(query_result.text)
+            logger.info(f"[SemanticLayer] ✅ Generated SL query (took {timing:.2f}s)")
+            logger.debug(f"[SemanticLayer] Query result: {query_result.text[:100]}...")
             return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage)
         except Exception as e:
             timing = time.time() - start_time
+            logger.error(f"[SemanticLayer] ❌ Failed to generate query after {timing:.2f}s: {e}")
             return QueryGenerationResult.error_result(e, prompt, timing)
 
 
 class MCPQueryStrategy(QueryStrategy):
     """Strategy for generating MCP queries"""
 
-    def __init__(self, config: BaseConfig):
+    def __init__(self, config: BaseConfig) -> None:
         self.config = config
 
     def generate_query(self, request: QueryRequest) -> QueryGenerationResult:
-        from ..executors.mcp_server import MCPServerConfig
-        from ..executors.prompt_executor import execute_prompt
-
         start_time = time.time()
+        logger.debug(f"[MCP] Starting query generation for: {request.question[:50]}...")
 
         prompt = """
-        Using the MCP tools, answer the following question:
+        Using the MCP tools, answer the following question.
+        - Only provide the final answer that comes from a call to the tool `get_metrics_compiled_sql`. Do not write any SQL yourself.
+        - Before calling the tool `get_metrics_compiled_sql`, check the instructions of the tool `query_metrics` to understand how to provide the parameters, but don't call the `query_metrics` tool directly
+        - When calling the tool `list_metrics`, never use `search`. Always get all of them and search by yourself.
+        - In your answer, add in the first lines SQL comments with each tool that was called and the parameters used.
+        - After the comments on the tools called, add the query in plain text with no more comments or markdown formatting.
+          - IMPORTANT: Do not add any commentary like "Perfect! I have the SQL. ..." ; just provide comments on the tools and the SQL uncommented
+          - IMPORTANT: I will run the text as-is on my data warehouse and any non-commented out text will cause errors.
+
         """
         prompt += request.question
 
-        mcp_config = MCPServerConfig(
-            server_type="http",
-            url=self.config.mcp_url,
-            tool_prefix=None,
-            headers={
-                "Authorization": f"token {self.config.dbt_sl_service_token}",
-                "x-dbt-prod-environment-id": self.config.environment_id,
-                "x-dbt-disable-tools": ",".join([
-                    "build", "compile", "docs", "ls", "parse", "run", "test", "show",
-                    "get_mart_models", "get_all_models", "get_model_details", "get_model_parents",
-                    "get_model_children", "get_model_health", "list_jobs", "get_job_details",
-                    "trigger_job_run", "list_jobs_runs", "get_job_run_details", "cancel_job_run",
-                    "retry_job_run", "list_job_run_artifacts", "get_job_run_artifact",
-                    "text_to_sql", "execute_sql",
-                ]),
-            }
-        )
+        # Create base MCP config from environment
+        logger.debug("[MCP] Creating MCP server config from environment settings...")
+        mcp_config = settings.create_mcp_server_config()
+
+        # Add strategy-specific headers if HTTP
+        if mcp_config.server_type == "http":
+            if mcp_config.headers is None:
+                mcp_config.headers = {}
+            mcp_config.headers.update(
+                {
+                    "x-dbt-disable-tools": ",".join(
+                        [
+                            # "query_metrics"
+                        ]
+                    ),
+                    "x-dbt-disable-toolsets": ",".join(
+                        ["sql", "discovery", "dbt_cli", "admin_api", "dbt_codegen", "dbt_lsp"]
+                    ),
+                }
+            )
+
+        logger.debug(f"[MCP] Using {mcp_config.server_type} MCP server")
 
         try:
+            logger.debug("[MCP] Executing prompt via LLM with MCP tools...")
             query_result = execute_prompt(prompt, self.config, mcp_config=mcp_config)
             timing = time.time() - start_time
-            print(f"Generated MCP SL query (took {timing:.2f}s)")
-            print(query_result.text)
+            logger.info(f"[MCP] ✅ Generated MCP SL query (took {timing:.2f}s)")
+            logger.debug(f"[MCP] Query result: {query_result.text[:100]}...")
             return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage)
         except Exception as e:
             timing = time.time() - start_time
+            logger.error(f"[MCP] ❌ Failed to generate query after {timing:.2f}s: {e}")
             return QueryGenerationResult.error_result(e, prompt, timing)
 
 
 class SQLQueryStrategy(QueryStrategy):
     """Strategy for generating SQL queries"""
 
-    def __init__(self, config: BaseConfig):
+    def __init__(self, config: BaseConfig) -> None:
         self.config = config
 
     def generate_query(self, request: QueryRequest) -> QueryGenerationResult:
-        from ..executors.prompt_executor import execute_prompt
-
         start_time = time.time()
+        logger.debug(f"[SQL] Starting query generation for: {request.question[:50]}...")
 
         # Read SQL DDL from file
-        with open(self.config.ddl_file, "r") as ddl_file:
+        logger.debug(f"[SQL] Reading DDL from file: {self.config.ddl_file}")
+        with open(self.config.ddl_file) as ddl_file:
             sql_ddl = ddl_file.read()
 
         prompt = f"""
@@ -156,26 +184,27 @@ class SQLQueryStrategy(QueryStrategy):
         """
 
         try:
+            logger.debug("[SQL] Executing prompt via LLM...")
             query_result = execute_prompt(prompt, self.config)
             timing = time.time() - start_time
-            print(f"Generated SQL (took {timing:.2f}s)")
-            print(query_result.text)
+            logger.info(f"[SQL] ✅ Generated SQL (took {timing:.2f}s)")
+            logger.debug(f"[SQL] Query result: {query_result.text[:100]}...")
             return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage)
         except Exception as e:
             timing = time.time() - start_time
-            print(e)
+            logger.error(f"[SQL] ❌ Failed to generate query after {timing:.2f}s: {e}")
             return QueryGenerationResult.error_result(e, prompt, timing)
 
 
 class QueryGenerationService:
     """Service for generating queries using different strategies"""
 
-    def __init__(self, config: BaseConfig):
+    def __init__(self, config: BaseConfig) -> None:
         self.config = config
         self._strategies = {
-            'semantic_layer': SemanticLayerQueryStrategy(config),
-            'mcp': MCPQueryStrategy(config),
-            'sql': SQLQueryStrategy(config)
+            "semantic_layer": SemanticLayerQueryStrategy(config),
+            "mcp": MCPQueryStrategy(config),
+            "sql": SQLQueryStrategy(config),
         }
 
     def generate_query(self, strategy_name: str, request: QueryRequest) -> QueryGenerationResult:
@@ -192,30 +221,49 @@ QueryGenerator = QueryGenerationService
 
 
 # Legacy functions for backward compatibility
-def generate_semantic_layer_query(question: str, metric_details: str, dimension_details: str, entity_details: str, config: BaseConfig) -> Tuple[bool, Union[str, Exception], str, float, dict]:
+def generate_semantic_layer_query(
+    question: str, metric_details: str, dimension_details: str, entity_details: str, config: BaseConfig
+) -> tuple[bool, str | Exception, str, float, dict | None]:
     """Legacy function for backward compatibility"""
     generator = QueryGenerationService(config)
     context = {
-        'metric_details': metric_details,
-        'dimension_details': dimension_details,
-        'entity_details': entity_details
+        "metric_details": metric_details,
+        "dimension_details": dimension_details,
+        "entity_details": entity_details,
     }
     request = QueryRequest(question, context)
-    result = generator.generate_query('semantic_layer', request)
-    return result.success, result.query if result.success else result.error, result.prompt, result.timing, result.token_usage
+    result = generator.generate_query("semantic_layer", request)
+    return (
+        result.success,
+        result.query if result.success else (result.error or Exception("Unknown error")),
+        result.prompt,
+        result.timing,
+        result.token_usage,
+    )
 
 
-def generate_mcp_query(question: str, config: BaseConfig) -> Tuple[bool, Union[str, Exception], str, float, dict]:
+def generate_mcp_query(question: str, config: BaseConfig) -> tuple[bool, str | Exception, str, float, dict | None]:
     """Legacy function for backward compatibility"""
     generator = QueryGenerationService(config)
     request = QueryRequest(question)
-    result = generator.generate_query('mcp', request)
-    return result.success, result.query if result.success else result.error, result.prompt, result.timing, result.token_usage
+    result = generator.generate_query("mcp", request)
+    return (
+        result.success,
+        result.query if result.success else (result.error or Exception("Unknown error")),
+        result.prompt,
+        result.timing,
+        result.token_usage,
+    )
 
 
-def generate_sql_query(question: str, config: BaseConfig) -> Tuple[bool, Union[str, Exception], float, dict]:
+def generate_sql_query(question: str, config: BaseConfig) -> tuple[bool, str | Exception, float, dict | None]:
     """Legacy function for backward compatibility"""
     generator = QueryGenerationService(config)
     request = QueryRequest(question)
-    result = generator.generate_query('sql', request)
-    return result.success, result.query if result.success else result.error, result.timing, result.token_usage
+    result = generator.generate_query("sql", request)
+    return (
+        result.success,
+        result.query if result.success else (result.error or Exception("Unknown error")),
+        result.timing,
+        result.token_usage,
+    )

@@ -1,15 +1,16 @@
 """Data models for the benchmark tool."""
 
-from .answers import QueryResult, SQLAnswer
-from .requests import QueryRequest, SQLAnswerRequest
-from .results import ComparisonResult, DatabaseExecutionResult, QueryGenerationResult
+from llm_bench.models.answers import QueryResult, SQLAnswer
+from llm_bench.models.requests import QueryRequest, SQLAnswerRequest
+from llm_bench.models.results import ComparisonResult, DatabaseExecutionResult, QueryGenerationResult
+
 
 __all__ = [
-    "SQLAnswer",
-    "QueryResult",
-    "QueryRequest",
-    "SQLAnswerRequest",
-    "QueryGenerationResult",
-    "DatabaseExecutionResult",
     "ComparisonResult",
+    "DatabaseExecutionResult",
+    "QueryGenerationResult",
+    "QueryRequest",
+    "QueryResult",
+    "SQLAnswer",
+    "SQLAnswerRequest",
 ]

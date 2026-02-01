@@ -2,23 +2,24 @@
 
 from typing import TYPE_CHECKING
 
-from .base import BaseConfig
-from .strategies import MCPConfig, SQLConfig, SemanticLayerConfig
+from llm_bench.config.base import BaseConfig
+from llm_bench.config.strategies import MCPConfig, SemanticLayerConfig, SQLConfig
+from llm_bench.factories.answer_factory import SQLAnswerFactory
+from llm_bench.services.comparison import ComparisonService
+from llm_bench.services.database import DatabaseService
+from llm_bench.services.query_generation import QueryGenerationService
+
 
 if TYPE_CHECKING:
-    from ..runners.benchmark import BenchmarkServices
+    from llm_bench.runners.benchmark import BenchmarkServices
 
 
 class ConfigurationManager:
     """Manages configuration instances and provides factory methods"""
 
-    def __init__(self):
-        self._configs = {
-            'semantic_layer': SemanticLayerConfig(),
-            'mcp': MCPConfig(),
-            'sql': SQLConfig()
-        }
-        self._default_config = self._configs['semantic_layer']
+    def __init__(self) -> None:
+        self._configs = {"semantic_layer": SemanticLayerConfig(), "mcp": MCPConfig(), "sql": SQLConfig()}
+        self._default_config = self._configs["semantic_layer"]
 
     def get_config(self, strategy: str) -> BaseConfig:
         """Get configuration for a specific strategy"""
@@ -34,13 +35,9 @@ class ConfigurationManager:
         """Set the default configuration to a specific strategy"""
         self._default_config = self.get_config(strategy)
 
-    def create_services(self, config: BaseConfig) -> 'BenchmarkServices':
+    def create_services(self, config: BaseConfig) -> "BenchmarkServices":
         """Create all services for a given configuration"""
-        from ..services.database import DatabaseService
-        from ..services.query_generation import QueryGenerationService
-        from ..services.comparison import ComparisonService
-        from ..factories.answer_factory import SQLAnswerFactory
-        from ..runners.benchmark import BenchmarkServices
+        from llm_bench.runners.benchmark import BenchmarkServices
 
         database_service = DatabaseService(config)
         query_service = QueryGenerationService(config)
@@ -52,7 +49,7 @@ class ConfigurationManager:
             database_service=database_service,
             query_service=query_service,
             comparison_service=comparison_service,
-            factory=factory
+            factory=factory,
         )
 
 
@@ -60,9 +57,9 @@ class ConfigurationManager:
 config_manager = ConfigurationManager()
 
 # Global configuration instances - you can choose which one to use
-semantic_config = config_manager.get_config('semantic_layer')
-mcp_config = config_manager.get_config('mcp')
-sql_config = config_manager.get_config('sql')
+semantic_config = config_manager.get_config("semantic_layer")
+mcp_config = config_manager.get_config("mcp")
+sql_config = config_manager.get_config("sql")
 
 # Default config for backward compatibility
 config = config_manager.get_default_config()

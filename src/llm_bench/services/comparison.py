@@ -3,7 +3,7 @@
 import pandas as pd
 from loguru import logger
 
-from ..models.results import ComparisonResult
+from llm_bench.models.results import ComparisonResult
 
 
 class ComparisonService:
@@ -44,18 +44,26 @@ class ComparisonService:
 
             gold_comparison_column_map = {}
 
+            # First pass: Try to map columns by exact name match
             for gold_column in alphabetical_gold_columns:
+                if gold_column in comparison_df.columns:
+                    gold_comparison_column_map[gold_column] = gold_column
+                    logger.debug(f"  ✓ MAPPED by name: {gold_column!r} -> {gold_column!r}")
+
+            # Second pass: For unmapped gold columns, try to match by values
+            for gold_column in alphabetical_gold_columns:
+                if gold_column in gold_comparison_column_map.values():
+                    continue  # Already mapped
                 gold_col_type = gold_df[gold_column].dtype
                 gold_col_vals = gold_df[gold_column].sort_values().reset_index(drop=True)
                 logger.debug(
-                    f"Matching gold column: {repr(gold_column)}\n"
-                    f"  Type: {gold_col_type}\n"
-                    f"  Values: {gold_col_vals.values}"
+                    f"Matching gold column: {gold_column!r}\n  Type: {gold_col_type}\n  Values: {gold_col_vals.values}"
                 )
 
                 for comparison_column in comparison_df.columns:
-                    if comparison_column in gold_comparison_column_map.keys():
-                        logger.debug(f"  Skipping {repr(comparison_column)}: already mapped")
+                    # Skip if this comparison column is already mapped to a gold column
+                    if comparison_column in gold_comparison_column_map:
+                        logger.debug(f"  Skipping {comparison_column!r}: already mapped")
                         continue
                     comparison_column_type = comparison_df[comparison_column].dtype
 
@@ -71,30 +79,34 @@ class ComparisonService:
                     is_gold_numeric_object = False
                     is_comp_numeric_object = False
 
-                    if gold_col_type == object and len(gold_col_vals) > 0:
+                    if gold_col_type is object and len(gold_col_vals) > 0:
                         first_val = gold_col_vals.iloc[0]
-                        is_gold_numeric_object = (isinstance(first_val, (int, float, complex)) or
-                                                 hasattr(first_val, '__float__'))
+                        is_gold_numeric_object = isinstance(first_val, (int, float, complex)) or hasattr(
+                            first_val, "__float__"
+                        )
 
-                    if comparison_column_type == object and len(comparison_column_values) > 0:
+                    if comparison_column_type is object and len(comparison_column_values) > 0:
                         first_val = comparison_column_values.iloc[0]
-                        is_comp_numeric_object = (isinstance(first_val, (int, float, complex)) or
-                                                 hasattr(first_val, '__float__'))
+                        is_comp_numeric_object = isinstance(first_val, (int, float, complex)) or hasattr(
+                            first_val, "__float__"
+                        )
 
                     types_compatible = (
-                        comparison_column_type == gold_col_type or
-                        (is_gold_numeric and is_comp_numeric) or
-                        (is_gold_numeric and is_comp_numeric_object) or
-                        (is_gold_numeric_object and is_comp_numeric) or
-                        (is_gold_numeric_object and is_comp_numeric_object)
+                        comparison_column_type == gold_col_type
+                        or (is_gold_numeric and is_comp_numeric)
+                        or (is_gold_numeric and is_comp_numeric_object)
+                        or (is_gold_numeric_object and is_comp_numeric)
+                        or (is_gold_numeric_object and is_comp_numeric_object)
                     )
 
                     if not types_compatible:
-                        logger.debug(f"  {repr(comparison_column)}: types not compatible ({comparison_column_type} vs {gold_col_type})")
+                        logger.debug(
+                            f"  {comparison_column!r}: types not compatible ({comparison_column_type} vs {gold_col_type})"
+                        )
                         continue
 
                     logger.debug(
-                        f"  Checking comparison column: {repr(comparison_column)}\n"
+                        f"  Checking comparison column: {comparison_column!r}\n"
                         f"    Type: {comparison_column_type}\n"
                         f"    Values: {comparison_column_values.values}"
                     )
@@ -117,7 +129,7 @@ class ComparisonService:
                                 check_dtype=False,
                                 check_names=False,
                                 atol=1e-5,
-                                rtol=1e-5
+                                rtol=1e-5,
                             )
                             match = True
                             match_method = "approximate (float conversion)"
@@ -127,15 +139,16 @@ class ComparisonService:
 
                     if match:
                         gold_comparison_column_map[comparison_column] = gold_column
-                        logger.debug(f"  ✓ MATCHED: {repr(comparison_column)} -> {repr(gold_column)} ({match_method})")
+                        logger.debug(f"  ✓ MATCHED by value: {comparison_column!r} -> {gold_column!r} ({match_method})")
                         break
                 else:
-                    # No match found for this gold column
-                    logger.debug(f"  ✗ NO MATCH FOUND for gold column: {repr(gold_column)}")
+                    # No match found for this gold column by value
+                    logger.debug(f"  ✗ NO VALUE MATCH for gold column: {gold_column!r}")
 
             # Log final mapping
-            mapping_str = "\n".join([f"  {repr(comp_col)} -> {repr(gold_col)}"
-                                     for comp_col, gold_col in gold_comparison_column_map.items()])
+            mapping_str = "\n".join(
+                [f"  {comp_col!r} -> {gold_col!r}" for comp_col, gold_col in gold_comparison_column_map.items()]
+            )
             logger.debug(
                 f"Column mapping complete:\n"
                 f"{mapping_str}\n"
@@ -174,33 +187,33 @@ class ComparisonService:
                 comp_dtype = comparison_df[col].dtype
 
                 # Check if we need to normalize (one is object with numeric, other is numeric type)
-                if gold_dtype == object and pd.api.types.is_numeric_dtype(comp_dtype):
+                if gold_dtype is object and pd.api.types.is_numeric_dtype(comp_dtype):
                     try:
                         gold_df[col] = gold_df[col].astype(float)
-                        normalized_cols.append(f"{repr(col)}: gold object->float")
+                        normalized_cols.append(f"{col!r}: gold object->float")
                     except (ValueError, TypeError):
                         pass  # Keep as-is if conversion fails
-                elif comp_dtype == object and pd.api.types.is_numeric_dtype(gold_dtype):
+                elif comp_dtype is object and pd.api.types.is_numeric_dtype(gold_dtype):
                     try:
                         comparison_df[col] = comparison_df[col].astype(float)
-                        normalized_cols.append(f"{repr(col)}: comparison object->float")
+                        normalized_cols.append(f"{col!r}: comparison object->float")
                     except (ValueError, TypeError):
                         pass  # Keep as-is if conversion fails
-                elif gold_dtype == object and comp_dtype == object:
+                elif gold_dtype is object and comp_dtype is object:
                     # Both are object, check if they contain numeric values
                     if len(gold_df[col]) > 0:
                         first_gold = gold_df[col].iloc[0]
                         first_comp = comparison_df[col].iloc[0]
-                        if (hasattr(first_gold, '__float__') and hasattr(first_comp, '__float__')):
+                        if hasattr(first_gold, "__float__") and hasattr(first_comp, "__float__"):
                             try:
                                 gold_df[col] = gold_df[col].astype(float)
                                 comparison_df[col] = comparison_df[col].astype(float)
-                                normalized_cols.append(f"{repr(col)}: both object->float")
+                                normalized_cols.append(f"{col!r}: both object->float")
                             except (ValueError, TypeError):
                                 pass
 
             if normalized_cols:
-                logger.debug(f"Normalized columns:\n" + "\n".join(f"  {c}" for c in normalized_cols))
+                logger.debug("Normalized columns:\n" + "\n".join(f"  {c}" for c in normalized_cols))
 
             # Result for entire test run
             is_equivalent = gold_df.equals(comparison_df)
@@ -208,7 +221,7 @@ class ComparisonService:
             return ComparisonResult.success_result(is_equivalent)
 
         except Exception as e:
-            error_msg = f"Exception during comparison: {str(e)}"
+            error_msg = f"Exception during comparison: {e!s}"
             logger.error(error_msg)
             return ComparisonResult.error_result(str(e))
 

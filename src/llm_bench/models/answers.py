@@ -2,7 +2,6 @@
 
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
 import pandas as pd
 
@@ -10,13 +9,14 @@ import pandas as pd
 @dataclass
 class SQLAnswer:
     """Result of a query generation and execution attempt."""
+
     challenge_text: str
     method: str
     model: str
     timing: float = 0
     sql: str = ""
     data: pd.DataFrame = field(default_factory=pd.DataFrame)
-    token_usage: Optional[dict] = None
+    token_usage: dict | None = None
     is_successful: bool = False
     error: str = ""
     prompt: str = ""
@@ -26,10 +26,12 @@ class SQLAnswer:
     iteration: int = 0
     library: str = ""
     batch_id: int = 0  # Unique identifier for a benchmark run
+    config_comment: str = ""  # Optional comment describing the configuration variant used
 
 
 @dataclass
 class QueryResult:
     """Result from AI model query execution."""
+
     text: str
-    usage: Optional[dict] = None
+    usage: dict | None = None

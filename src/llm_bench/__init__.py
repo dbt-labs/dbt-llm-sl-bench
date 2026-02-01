@@ -3,24 +3,24 @@
 __version__ = "1.0.0"
 
 # Import key components for easier access
-from .config import (
+from llm_bench.config import (
     BaseConfig,
     ConfigurationManager,
     MCPConfig,
     ModelName,
-    SQLConfig,
     SemanticLayerConfig,
+    SQLConfig,
     config,
     config_manager,
 )
-from .exceptions import (
+from llm_bench.exceptions import (
     BenchmarkError,
     ComparisonError,
     ConfigurationError,
     DatabaseConnectionError,
     QueryGenerationError,
 )
-from .models import (
+from llm_bench.models import (
     ComparisonResult,
     DatabaseExecutionResult,
     QueryGenerationResult,
@@ -29,52 +29,48 @@ from .models import (
     SQLAnswer,
     SQLAnswerRequest,
 )
-from .runners import (
+from llm_bench.runners import (
     BenchmarkRunner,
     BenchmarkServices,
     run_matrix_benchmark,
     run_single_benchmark,
 )
-from .services import (
+from llm_bench.services import (
     ComparisonService,
     DatabaseService,
     QueryGenerationService,
     VisualizationService,
 )
 
+
 __all__ = [
-    "__version__",
-    # Config
     "BaseConfig",
-    "ModelName",
-    "SemanticLayerConfig",
-    "MCPConfig",
-    "SQLConfig",
-    "ConfigurationManager",
-    "config_manager",
-    "config",
-    # Exceptions
     "BenchmarkError",
-    "QueryGenerationError",
-    "DatabaseConnectionError",
-    "ConfigurationError",
-    "ComparisonError",
-    # Models
-    "SQLAnswer",
-    "QueryResult",
-    "QueryRequest",
-    "SQLAnswerRequest",
-    "QueryGenerationResult",
-    "DatabaseExecutionResult",
-    "ComparisonResult",
-    # Services
-    "DatabaseService",
-    "QueryGenerationService",
-    "ComparisonService",
-    "VisualizationService",
-    # Runners
     "BenchmarkRunner",
     "BenchmarkServices",
-    "run_single_benchmark",
+    "ComparisonError",
+    "ComparisonResult",
+    "ComparisonService",
+    "ConfigurationError",
+    "ConfigurationManager",
+    "DatabaseConnectionError",
+    "DatabaseExecutionResult",
+    "DatabaseService",
+    "MCPConfig",
+    "ModelName",
+    "QueryGenerationError",
+    "QueryGenerationResult",
+    "QueryGenerationService",
+    "QueryRequest",
+    "QueryResult",
+    "SQLAnswer",
+    "SQLAnswerRequest",
+    "SQLConfig",
+    "SemanticLayerConfig",
+    "VisualizationService",
+    "__version__",
+    "config",
+    "config_manager",
     "run_matrix_benchmark",
+    "run_single_benchmark",
 ]

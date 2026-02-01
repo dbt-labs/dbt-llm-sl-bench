@@ -1,7 +1,7 @@
 """Configuration classes and manager for the benchmark tool."""
 
-from .base import BaseConfig, ModelName
-from .manager import (
+from llm_bench.config.base import BaseConfig, ModelName
+from llm_bench.config.manager import (
     ConfigurationManager,
     config,
     config_manager,
@@ -9,21 +9,22 @@ from .manager import (
     semantic_config,
     sql_config,
 )
-from .settings import EnvSettings, settings
-from .strategies import MCPConfig, SQLConfig, SemanticLayerConfig
+from llm_bench.config.settings import EnvSettings, settings
+from llm_bench.config.strategies import MCPConfig, SemanticLayerConfig, SQLConfig
+
 
 __all__ = [
     "BaseConfig",
-    "ModelName",
-    "SemanticLayerConfig",
-    "MCPConfig",
-    "SQLConfig",
     "ConfigurationManager",
-    "config_manager",
-    "semantic_config",
-    "mcp_config",
-    "sql_config",
-    "config",
     "EnvSettings",
+    "MCPConfig",
+    "ModelName",
+    "SQLConfig",
+    "SemanticLayerConfig",
+    "config",
+    "config_manager",
+    "mcp_config",
+    "semantic_config",
     "settings",
+    "sql_config",
 ]
