@@ -3,6 +3,9 @@
 from typing import Optional
 
 from openai import OpenAI
+from pydantic_ai.models import Model
+from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
+from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
 
 from llm_bench.config.base import BaseConfig
 from llm_bench.executors.ai_executor import AIExecutor
@@ -14,13 +17,38 @@ from llm_bench.models.answers import QueryResult
 client = OpenAI()
 
 
-def get_pydantic_ai_model_name(model_name: str) -> str:
-    """Convert model name to pydantic-ai format."""
+OPENAI_REASONING_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh"}
+ANTHROPIC_REASONING_EFFORTS = {"low", "medium", "high", "max"}
+
+
+def get_pydantic_ai_model(model_name: str, config: BaseConfig) -> Model:
+    """Create a pydantic-ai model instance from a model name.
+
+    If config.reasoning_effort is set, provider-specific model settings
+    are passed to the model constructor.
+    """
+    settings = None
+    effort = config.reasoning_effort
+
+    if effort is not None:
+        if model_name.startswith("gpt"):
+            if effort not in OPENAI_REASONING_EFFORTS:
+                raise ValueError(
+                    f"Invalid reasoning_effort '{effort}' for OpenAI. Must be one of: {sorted(OPENAI_REASONING_EFFORTS)}"
+                )
+            settings = OpenAIResponsesModelSettings(openai_reasoning_effort=effort)
+        elif model_name.startswith("claude"):
+            if effort not in ANTHROPIC_REASONING_EFFORTS:
+                raise ValueError(
+                    f"Invalid reasoning_effort '{effort}' for Anthropic. Must be one of: {sorted(ANTHROPIC_REASONING_EFFORTS)}"
+                )
+            settings = AnthropicModelSettings(anthropic_effort=effort)
+
     if model_name.startswith("gpt"):
-        return f"openai:{model_name}"
+        return OpenAIResponsesModel(model_name, settings=settings)
     if model_name.startswith("claude"):
-        return f"anthropic:{model_name}"
-    raise ValueError(f"Invalid model name: {model_name}")
+        return AnthropicModel(model_name, settings=settings)
+    raise ValueError(f"Unsupported model name: {model_name}")
 
 
 def execute_prompt_open_ai(prompt: str, config: BaseConfig) -> QueryResult:
@@ -28,18 +56,19 @@ def execute_prompt_open_ai(prompt: str, config: BaseConfig) -> QueryResult:
     completion = client.chat.completions.create(
         model=config.model_name.value, messages=[{"role": "user", "content": prompt}]
     )
-    return QueryResult(text=completion.choices[0].message.content)
+    return QueryResult(text=completion.choices[0].message.content, model_name=completion.model)
 
 
 def execute_prompt_pydantic_ai(
     prompt: str, config: BaseConfig, mcp_config: Optional["MCPServerConfig"] = None
 ) -> QueryResult:
     """Execute prompt using pydantic-ai."""
-    model = get_pydantic_ai_model_name(config.model_name.value)
+    model = get_pydantic_ai_model(config.model_name.value, config)
     executor = AIExecutor(model=model, config=config, mcp_config=mcp_config)
     result = executor.execute_prompt_sync(prompt, timeout=config.llm_timeout)
     token_usage = executor.get_token_usage()
-    return QueryResult(text=result, usage=token_usage)
+    model_name = executor.get_model_name()
+    return QueryResult(text=result, usage=token_usage, model_name=model_name)
 
 
 def execute_prompt(prompt: str, config: BaseConfig, mcp_config: Optional["MCPServerConfig"] = None) -> QueryResult:

@@ -6,7 +6,7 @@ from llm_bench.executors.prompt_executor import (
     execute_prompt,
     execute_prompt_open_ai,
     execute_prompt_pydantic_ai,
-    get_pydantic_ai_model_name,
+    get_pydantic_ai_model,
 )
 
 
@@ -16,5 +16,5 @@ __all__ = [
     "execute_prompt",
     "execute_prompt_open_ai",
     "execute_prompt_pydantic_ai",
-    "get_pydantic_ai_model_name",
+    "get_pydantic_ai_model",
 ]

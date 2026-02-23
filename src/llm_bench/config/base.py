@@ -12,13 +12,15 @@ class ModelName(Enum):
     GPT_5_NANO = "gpt-5-nano"
     GPT_5_MINI = "gpt-5-mini"
     GPT_5 = "gpt-5"
+    GPT_5_1_CODEX = "gpt-5.1-codex"
     GPT_5_1 = "gpt-5.1"
     GPT_5_2 = "gpt-5.2"
     CLAUDE_SONNET_3_7 = "claude-3-7-sonnet-20250219"
     CLAUDE_SONNET_4 = "claude-sonnet-4-20250514"
     CLAUDE_SONNET_4_5 = "claude-sonnet-4-5"
-    CLAUDE_OPUS_4_1 = "claude-opus-4-1-20250805"
+    CLAUDE_SONNET_4_6 = "claude-sonnet-4-6"
     CLAUDE_OPUS_4_5 = "claude-opus-4-5"
+    CLAUDE_OPUS_4_6 = "claude-opus-4-6"
 
 
 @dataclass
@@ -31,6 +33,7 @@ class BaseConfig:
     # Model Configuration
     model_name: ModelName = ModelName.GPT_5
     use_pydantic_ai: bool = True
+    reasoning_effort: str | None = None
 
     # Benchmark Configuration
     number_of_iterations: int = 4
