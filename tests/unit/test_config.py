@@ -37,19 +37,8 @@ class TestBaseConfig:
     def test_base_config_initialization(self, base_config) -> None:
         """Test that BaseConfig initializes with default values"""
         assert base_config.model_name == ModelName.GPT_5
-        assert base_config.use_pydantic_ai is True
         assert base_config.number_of_iterations == 1
         assert base_config.database_file == "test_llm_bench.db"
-
-    def test_library_name_pydantic_ai(self) -> None:
-        """Test library_name property returns pydantic-ai"""
-        config = BaseConfig(use_pydantic_ai=True)
-        assert config.library_name == "pydantic-ai"
-
-    def test_library_name_openai_sdk(self) -> None:
-        """Test library_name property returns openai-sdk"""
-        config = BaseConfig(use_pydantic_ai=False)
-        assert config.library_name == "openai-sdk"
 
     def test_jdbc_url_generation(self) -> None:
         """Test that JDBC URL is generated correctly"""
@@ -82,7 +71,6 @@ class TestSemanticLayerConfig:
         """Test that SemanticLayerConfig inherits from BaseConfig"""
         config = SemanticLayerConfig()
         assert hasattr(config, "model_name")
-        assert hasattr(config, "use_pydantic_ai")
         assert hasattr(config, "jdbc_url")
 
 

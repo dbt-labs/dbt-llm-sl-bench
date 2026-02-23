@@ -32,7 +32,6 @@ class BaseConfig:
 
     # Model Configuration
     model_name: ModelName = ModelName.GPT_5
-    use_pydantic_ai: bool = True
     reasoning_effort: str | None = None
 
     # Benchmark Configuration
@@ -71,11 +70,6 @@ class BaseConfig:
 
     # Strategy field (set by subclasses)
     strategy: str = ""
-
-    @property
-    def library_name(self) -> str:
-        """Get the library name being used."""
-        return "pydantic-ai" if self.use_pydantic_ai else "openai-sdk"
 
     @property
     def jdbc_url(self) -> str:

@@ -13,7 +13,7 @@ class TestSQLAnswerFactory:
     @pytest.fixture
     def factory(self):
         """Create a factory with test config"""
-        config = BaseConfig(model_name=ModelName.GPT_5, use_pydantic_ai=True)
+        config = BaseConfig(model_name=ModelName.GPT_5)
         return SQLAnswerFactory(config)
 
     def test_factory_initialization(self, factory) -> None:
@@ -128,15 +128,6 @@ class TestSQLAnswerFactory:
         assert answer.is_successful is False
         assert answer.sql == ""
         assert "Query generation failed" in answer.error
-
-    def test_answer_includes_library_name(self, factory) -> None:
-        """Test that created answers include library name"""
-        request = SQLAnswerRequest(
-            challenge_text="Test", method="sql", success=True, query_or_error="SELECT 1", timing=1.0
-        )
-        answer = factory.create_answer(request)
-
-        assert answer.library == "pydantic-ai"
 
     def test_answer_includes_model_name(self, factory) -> None:
         """Test that created answers include model name"""

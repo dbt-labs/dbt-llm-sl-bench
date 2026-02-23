@@ -49,45 +49,40 @@ def setup_logging(debug: bool = False):
     return logger
 
 
-def create_model_matrix(strategy: str, models: list[ModelName] | None = None, libraries: list[bool] | None = None):
-    """Create multiple configs for different models and libraries for a single strategy
+def create_model_matrix(strategy: str, models: list[ModelName] | None = None):
+    """Create multiple configs for different models for a single strategy
 
     Args:
         strategy: Strategy name ('semantic_layer', 'mcp', or 'sql')
         models: List of model names to test (default: [ModelName.GPT_5])
-        libraries: List of bool for use_pydantic_ai (default: [True, False])
 
     Returns:
         List of configurations
     """
     if models is None:
         models = [ModelName.GPT_5]
-    if libraries is None:
-        libraries = [True, False]  # Both pydantic-ai and openai-sdk
 
     configs = []
     strategy_class = {"semantic_layer": SemanticLayerConfig, "mcp": MCPConfig, "sql": SQLConfig}[strategy]
 
     for model in models:
-        for use_pydantic in libraries:
-            configs.append(strategy_class(model_name=model, use_pydantic_ai=use_pydantic))
+        configs.append(strategy_class(model_name=model))
 
     return configs
 
 
-def create_strategy_matrix(models: list[ModelName] | None = None, libraries: list[bool] | None = None):
-    """Create configs for all strategies with different models and libraries
+def create_strategy_matrix(models: list[ModelName] | None = None):
+    """Create configs for all strategies with different models
 
     Args:
         models: List of model names to test
-        libraries: List of bool for use_pydantic_ai
 
     Returns:
         List of configurations covering all strategies
     """
     configs = []
     for strategy in ["semantic_layer", "mcp", "sql"]:
-        configs.extend(create_model_matrix(strategy, models, libraries))
+        configs.extend(create_model_matrix(strategy, models))
     return configs
 
 
@@ -110,27 +105,27 @@ if __name__ == "__main__":
 
     # Option 2: Run MCP strategy with Claude Sonnet 4.5
     example_configs = [
-        # SemanticLayerConfig(model_name=ModelName.CLAUDE_SONNET_4_5, use_pydantic_ai=True),
-        # MCPConfig(model_name=ModelName.CLAUDE_SONNET_4_5, use_pydantic_ai=True),
-        # SQLConfig(model_name=ModelName.CLAUDE_SONNET_4_5, use_pydantic_ai=True),
-        # SemanticLayerConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True),
-        # MCPConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True),
-        # SQLConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True)
-        SQLConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True, number_of_iterations=1),
-        # SemanticLayerConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True, number_of_iterations=20),
+        # SemanticLayerConfig(model_name=ModelName.CLAUDE_SONNET_4_5),
+        # MCPConfig(model_name=ModelName.CLAUDE_SONNET_4_5),
+        # SQLConfig(model_name=ModelName.CLAUDE_SONNET_4_5),
+        # SemanticLayerConfig(model_name=ModelName.CLAUDE_OPUS_4_5),
+        # MCPConfig(model_name=ModelName.CLAUDE_OPUS_4_5),
+        # SQLConfig(model_name=ModelName.CLAUDE_OPUS_4_5)
+        # SQLConfig(model_name=ModelName.CLAUDE_SONNET_4_6, number_of_iterations=1, reasoning_effort="max"),
+        SemanticLayerConfig(model_name=ModelName.GPT_5_1_CODEX, number_of_iterations=1, reasoning_effort="high"),
+        # SemanticLayerConfig(model_name=ModelName.CLAUDE_OPUS_4_5, number_of_iterations=20),
         # MCPConfig(
         #     model_name=ModelName.GPT_5_2,
-        #     use_pydantic_ai=True,
         #     number_of_iterations=4,
         #     config_comment="DELETE - Local MCP with get_all_semantic_layer_config",
         # ),
-        # SQLConfig(model_name=ModelName.GPT_5_2, use_pydantic_ai=True, number_of_iterations=4, ddl_file="ACME_enhanced.ddl", config_comment="SQL with the extra tables and enhanced ddl including schema name"),
-        # SemanticLayerConfig(model_name=ModelName.CLAUDE_SONNET_4_5, use_pydantic_ai=True, number_of_iterations=10),
-        # MCPConfig(model_name=ModelName.CLAUDE_SONNET_4_5, use_pydantic_ai=True, number_of_iterations=10),
-        # SQLConfig(model_name=ModelName.CLAUDE_SONNET_4_5, use_pydantic_ai=True, number_of_iterations=10)
-        # SemanticLayerConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True, number_of_iterations=5, selected_challenges=["What is the average time to settle a claim by policy number?"]),
-        # MCPConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True, number_of_iterations=5, selected_challenges=["What is the total amount of premiums that a policy holder has paid by policy number?"]),
-        # SQLConfig(model_name=ModelName.CLAUDE_OPUS_4_5, use_pydantic_ai=True, number_of_iterations=10, selected_challenges=["What is the average time to settle a claim by policy number?"])
+        # SQLConfig(model_name=ModelName.GPT_5_2, number_of_iterations=4, ddl_file="ACME_enhanced.ddl", config_comment="SQL with the extra tables and enhanced ddl including schema name"),
+        # SemanticLayerConfig(model_name=ModelName.CLAUDE_SONNET_4_5, number_of_iterations=10),
+        # MCPConfig(model_name=ModelName.CLAUDE_SONNET_4_5, number_of_iterations=10),
+        # SQLConfig(model_name=ModelName.CLAUDE_SONNET_4_5, number_of_iterations=10)
+        # SemanticLayerConfig(model_name=ModelName.CLAUDE_OPUS_4_5, number_of_iterations=5, selected_challenges=["What is the average time to settle a claim by policy number?"]),
+        # MCPConfig(model_name=ModelName.CLAUDE_OPUS_4_5, number_of_iterations=5, selected_challenges=["What is the total amount of premiums that a policy holder has paid by policy number?"]),
+        # SQLConfig(model_name=ModelName.CLAUDE_OPUS_4_5, number_of_iterations=10, selected_challenges=["What is the average time to settle a claim by policy number?"])
     ]
 
     # Load challenges once and share across all configs (more efficient than loading per thread)
@@ -143,7 +138,7 @@ if __name__ == "__main__":
     logger.info(f"Configured {len(example_configs)} benchmark configurations")
     for i, config in enumerate(example_configs, 1):
         logger.info(
-            f"  Config {i}: {config.strategy} with {config.model_name.value} (library: {config.library_name}, iterations: {config.number_of_iterations})"
+            f"  Config {i}: {config.strategy} with {config.model_name.value} (iterations: {config.number_of_iterations})"
         )
 
     # Run benchmarks in parallel (parallelizes across configs)
@@ -173,10 +168,7 @@ if __name__ == "__main__":
     logger.info("=" * 80)
 
     # Option 3: Full matrix - all strategies, multiple models
-    # full_matrix = create_strategy_matrix(
-    #     [ModelName.GPT_5, ModelName.CLAUDE_SONNET_4],
-    #     [True, False]
-    # )
+    # full_matrix = create_strategy_matrix([ModelName.GPT_5, ModelName.CLAUDE_SONNET_4])
     # sql_answers_list, results_df = run_matrix_benchmark(full_matrix, parallel=True, max_workers=6)
 
     # Visualize results (optional)

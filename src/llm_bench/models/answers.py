@@ -24,7 +24,6 @@ class SQLAnswer:
     comparison_error: str = ""
     timestamp: float = field(default_factory=time.time)
     iteration: int = 0
-    library: str = ""
     batch_id: int = 0  # Unique identifier for a benchmark run
     config_comment: str = ""  # Optional comment describing the configuration variant used
 

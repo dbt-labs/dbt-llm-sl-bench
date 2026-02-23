@@ -106,7 +106,6 @@ class TestStorageOperations:
             is_correct=True,
             comparison_error="",
             iteration=2,
-            library="pydantic-ai",
         )
 
         save_sql_answer(answer, temp_database)
@@ -117,7 +116,7 @@ class TestStorageOperations:
         conn = duckdb.connect(temp_database)
         result = conn.execute("""
             SELECT challenge_text, method, model, timing, sql, is_successful,
-                   prompt, is_correct, iteration, library
+                   prompt, is_correct, iteration
             FROM sql_answers
         """).fetchone()
         conn.close()
@@ -132,4 +131,3 @@ class TestStorageOperations:
         assert result[6] == "Test prompt"
         assert result[7] is True
         assert result[8] == 2
-        assert result[9] == "pydantic-ai"

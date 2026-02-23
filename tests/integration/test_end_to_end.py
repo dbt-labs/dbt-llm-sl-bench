@@ -17,7 +17,6 @@ class TestEndToEndBenchmark:
         """Test running a complete benchmark with SQL strategy"""
         config = SQLConfig(
             model_name=ModelName.GPT_5,
-            use_pydantic_ai=True,
             number_of_iterations=1,
             database_file=temp_database,
             ddl_file="ACME_small.ddl",
@@ -100,7 +99,7 @@ class TestBenchmarkWorkflow:
         from llm_bench.factories import SQLAnswerFactory
         from llm_bench.models import SQLAnswerRequest
 
-        config = BaseConfig(model_name=ModelName.CLAUDE_SONNET_4, use_pydantic_ai=False)
+        config = BaseConfig(model_name=ModelName.CLAUDE_SONNET_4)
         factory = SQLAnswerFactory(config)
 
         request = SQLAnswerRequest(
@@ -111,4 +110,3 @@ class TestBenchmarkWorkflow:
 
         # Verify config is applied
         assert answer.model == ModelName.CLAUDE_SONNET_4.value
-        assert answer.library == "openai-sdk"

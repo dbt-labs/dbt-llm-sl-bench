@@ -1,8 +1,7 @@
-"""Prompt execution functions supporting multiple AI libraries."""
+"""Prompt execution functions using pydantic-ai."""
 
 from typing import Optional
 
-from openai import OpenAI
 from pydantic_ai.models import Model
 from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
@@ -11,10 +10,6 @@ from llm_bench.config.base import BaseConfig
 from llm_bench.executors.ai_executor import AIExecutor
 from llm_bench.executors.mcp_server import MCPServerConfig
 from llm_bench.models.answers import QueryResult
-
-
-# Initialize OpenAI client
-client = OpenAI()
 
 
 OPENAI_REASONING_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh"}
@@ -51,14 +46,6 @@ def get_pydantic_ai_model(model_name: str, config: BaseConfig) -> Model:
     raise ValueError(f"Unsupported model name: {model_name}")
 
 
-def execute_prompt_open_ai(prompt: str, config: BaseConfig) -> QueryResult:
-    """Execute prompt using OpenAI SDK."""
-    completion = client.chat.completions.create(
-        model=config.model_name.value, messages=[{"role": "user", "content": prompt}]
-    )
-    return QueryResult(text=completion.choices[0].message.content, model_name=completion.model)
-
-
 def execute_prompt_pydantic_ai(
     prompt: str, config: BaseConfig, mcp_config: Optional["MCPServerConfig"] = None
 ) -> QueryResult:
@@ -72,7 +59,5 @@ def execute_prompt_pydantic_ai(
 
 
 def execute_prompt(prompt: str, config: BaseConfig, mcp_config: Optional["MCPServerConfig"] = None) -> QueryResult:
-    """Execute prompt using configured method (pydantic-ai or OpenAI SDK)."""
-    if config.use_pydantic_ai:
-        return execute_prompt_pydantic_ai(prompt, config=config, mcp_config=mcp_config)
-    return execute_prompt_open_ai(prompt, config=config)
+    """Execute prompt using pydantic-ai."""
+    return execute_prompt_pydantic_ai(prompt, config=config, mcp_config=mcp_config)

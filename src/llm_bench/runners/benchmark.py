@@ -187,7 +187,6 @@ class BenchmarkRunner:
             "iteration_num": i,
             "strategy": strategy,
             "model": answer.model,
-            "library": self.services.config.library_name,
             "gold_query_text": gold_query_text,
             "generated_query_text": answer.sql if answer.is_successful else str(answer.error),
             # timings
@@ -246,7 +245,6 @@ class BenchmarkRunner:
                 "iteration_num",
                 "strategy",
                 "model",
-                "library",
                 # queries
                 "gold_query_text",
                 "generated_query_text",
@@ -332,7 +330,7 @@ def run_single_benchmark(
         max_workers: Maximum number of parallel workers for challenge processing
         batch_id: Optional batch_id to use for this run (generated if None)
     """
-    logger.info(f"Running single benchmark: {config.strategy} with {config.model_name.value} ({config.library_name})")
+    logger.info(f"Running single benchmark: {config.strategy} with {config.model_name.value}")
 
     if challenges is None:
         logger.debug("Loading challenges from file...")
@@ -405,7 +403,7 @@ def run_matrix_benchmark(
             logger.info("")
             logger.info("=" * 80)
             logger.info(
-                f"Config {idx}/{len(configs)}: {config.strategy} with {config.model_name.value} ({config.library_name})"
+                f"Config {idx}/{len(configs)}: {config.strategy} with {config.model_name.value}"
             )
             logger.info("=" * 80)
 
@@ -444,7 +442,7 @@ def run_matrix_benchmark(
         thread_id = threading.get_ident()
 
         logger.info(
-            f"[Thread-{thread_id}] Starting config {index + 1}/{len(configs)}: {config.strategy} with {config.model_name.value} ({config.library_name})"
+            f"[Thread-{thread_id}] Starting config {index + 1}/{len(configs)}: {config.strategy} with {config.model_name.value}"
         )
 
         try:

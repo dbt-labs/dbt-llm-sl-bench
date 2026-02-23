@@ -29,7 +29,6 @@ class SQLAnswerFactory:
             prompt=request.prompt,
             token_usage=request.token_usage,
             iteration=request.iteration,
-            library=self.config.library_name,
             batch_id=request.batch_id,
             config_comment=self.config.config_comment,
         )

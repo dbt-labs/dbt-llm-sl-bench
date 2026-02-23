@@ -8,7 +8,7 @@ This repo contains code to
 
 ## Setup
 
-LLMs:
+LLMs (all models are accessed via PydanticAI):
 - to use OpenAI models, set the OPENAI_API_KEY as an env var before running
 - to use Anthropic models, set the ANTHROPIC_API_KEY as an env var before running
 (i personally use `direnv` to manage those env vars)

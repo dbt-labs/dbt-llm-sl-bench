@@ -22,7 +22,6 @@ def base_config() -> BaseConfig:
     """Basic configuration for testing"""
     return BaseConfig(
         model_name=ModelName.GPT_5,
-        use_pydantic_ai=True,
         number_of_iterations=1,
         database_file="test_llm_bench.db",
         ddl_file="ACME_small.ddl",
@@ -34,7 +33,7 @@ def base_config() -> BaseConfig:
 def semantic_layer_config() -> SemanticLayerConfig:
     """Semantic layer configuration for testing"""
     return SemanticLayerConfig(
-        model_name=ModelName.GPT_5, use_pydantic_ai=True, number_of_iterations=1, database_file="test_llm_bench.db"
+        model_name=ModelName.GPT_5, number_of_iterations=1, database_file="test_llm_bench.db"
     )
 
 
@@ -42,7 +41,7 @@ def semantic_layer_config() -> SemanticLayerConfig:
 def mcp_config() -> MCPConfig:
     """MCP configuration for testing"""
     return MCPConfig(
-        model_name=ModelName.GPT_5, use_pydantic_ai=True, number_of_iterations=1, database_file="test_llm_bench.db"
+        model_name=ModelName.GPT_5, number_of_iterations=1, database_file="test_llm_bench.db"
     )
 
 
@@ -50,7 +49,7 @@ def mcp_config() -> MCPConfig:
 def sql_config() -> SQLConfig:
     """SQL configuration for testing"""
     return SQLConfig(
-        model_name=ModelName.GPT_5, use_pydantic_ai=True, number_of_iterations=1, database_file="test_llm_bench.db"
+        model_name=ModelName.GPT_5, number_of_iterations=1, database_file="test_llm_bench.db"
     )
 
 
@@ -65,7 +64,6 @@ def sample_sql_answer() -> SQLAnswer:
         timing=1.5,
         sql="SELECT COUNT(*) FROM policies",
         is_successful=True,
-        library="pydantic-ai",
         iteration=0,
     )
 
@@ -130,22 +128,7 @@ def sample_challenges_dataframe() -> pd.DataFrame:
 
 # Mock Response Fixtures
 @pytest.fixture
-def mock_openai_response() -> Any:
-    """Mock OpenAI API response"""
-
-    class MockChoice:
-        def __init__(self, text: str) -> None:
-            self.message = type("obj", (object,), {"content": text})()
-
-    class MockCompletion:
-        def __init__(self, text: str) -> None:
-            self.choices = [MockChoice(text)]
-
-    return MockCompletion("SELECT COUNT(*) FROM policies")
-
-
-@pytest.fixture
-def mock_pydantic_ai_response() -> Any:
+def mock_pydantic_ai_response():
     """Mock pydantic-ai response"""
 
     class MockResult:
