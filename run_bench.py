@@ -103,30 +103,21 @@ if __name__ == "__main__":
     # from llm_bench.config import semantic_config
     # sql_answers_list, results_df = run_single_benchmark(semantic_config)
 
-    # Option 2: Run MCP strategy with Claude Sonnet 4.5
-    example_configs = [
-        # SemanticLayerConfig(model_name="anthropic:claude-sonnet-4-5"),
-        # MCPConfig(model_name="anthropic:claude-sonnet-4-5"),
-        # SQLConfig(model_name="anthropic:claude-sonnet-4-5"),
-        # SemanticLayerConfig(model_name="anthropic:claude-opus-4-5"),
-        # MCPConfig(model_name="anthropic:claude-opus-4-5"),
-        # SQLConfig(model_name="anthropic:claude-opus-4-5")
-        SQLConfig(model_name="anthropic:claude-sonnet-4-6", number_of_iterations=1, reasoning_effort="high"),
-        SemanticLayerConfig(model_name="openai:gpt-5.1-codex", number_of_iterations=1, reasoning_effort="high"),
-        # SemanticLayerConfig(model_name="anthropic:claude-opus-4-5", number_of_iterations=20),
-        # MCPConfig(
-        #     model_name="openai:gpt-5.2",
-        #     number_of_iterations=4,
-        #     config_comment="DELETE - Local MCP with get_all_semantic_layer_config",
-        # ),
-        # SQLConfig(model_name="openai:gpt-5.2", number_of_iterations=4, ddl_file="ACME_enhanced.ddl", config_comment="SQL with the extra tables and enhanced ddl including schema name"),
-        # SemanticLayerConfig(model_name="anthropic:claude-sonnet-4-5", number_of_iterations=10),
-        # MCPConfig(model_name="anthropic:claude-sonnet-4-5", number_of_iterations=10),
-        # SQLConfig(model_name="anthropic:claude-sonnet-4-5", number_of_iterations=10)
-        # SemanticLayerConfig(model_name="anthropic:claude-opus-4-5", number_of_iterations=5, selected_challenges=["What is the average time to settle a claim by policy number?"]),
-        # MCPConfig(model_name="anthropic:claude-opus-4-5", number_of_iterations=5, selected_challenges=["What is the total amount of premiums that a policy holder has paid by policy number?"]),
-        # SQLConfig(model_name="anthropic:claude-opus-4-5", number_of_iterations=10, selected_challenges=["What is the average time to settle a claim by policy number?"])
+    # Model × thinking-level matrix across SQL and Semantic Layer strategies
+    model_efforts: list[tuple[str, list[str]]] = [
+        ("anthropic:claude-opus-4-6", ["low", "medium", "high", "max"]),
+        ("anthropic:claude-sonnet-4-6", ["low", "medium", "high", "max"]),
+        ("openai:gpt-5.2", ["none", "minimal", "low", "medium", "high", "xhigh"]),
+        ("openai:gpt-5.1-codex", ["none", "minimal", "low", "medium", "high", "xhigh"]),
     ]
+
+    example_configs = []
+    for model, efforts in model_efforts:
+        for effort in efforts:
+            for strategy_cls in [SQLConfig, SemanticLayerConfig]:
+                example_configs.append(
+                    strategy_cls(model_name=model, number_of_iterations=5, reasoning_effort=effort)
+                )
 
     # Validate all configs before running
     validate_configs(example_configs)
