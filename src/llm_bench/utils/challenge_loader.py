@@ -53,7 +53,7 @@ def load_challenges_from_ttl(ttl_file: str, selected_challenges: list | None = N
 
     # Create a DataFrame from the query results
     # Note: list of str is valid for columns parameter, but pandas type stubs are overly strict
-    all_challenges = pd.DataFrame(results, columns=["title", "challenge_text", "gold_query_text", "gold_query_id"])  # type: ignore[call-arg]
+    all_challenges = pd.DataFrame(results, columns=["title", "challenge_text", "gold_query_text", "gold_query_id"])
 
     # Convert rdflib.term.Literal objects to strings
     all_challenges = all_challenges.map(lambda x: str(x) if x is not None else x)

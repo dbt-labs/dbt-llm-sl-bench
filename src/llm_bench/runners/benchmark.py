@@ -236,7 +236,7 @@ class BenchmarkRunner:
         logger.info(f"Benchmark configuration: strategy={strategy}, parallel={parallel}, max_workers={max_workers}")
 
         # Create empty DataFrame with specified columns (list of str is valid for columns parameter)
-        results_df = pd.DataFrame(  # type: ignore[call-arg]
+        results_df = pd.DataFrame(
             columns=[
                 "title",
                 "challenge_text",
