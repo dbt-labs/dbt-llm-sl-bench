@@ -2,9 +2,10 @@
 
 from typing import Optional
 
-from pydantic_ai.models import Model
+from pydantic_ai.models import Model, infer_model
 from pydantic_ai.models.anthropic import AnthropicModel, AnthropicModelSettings
 from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
+from pydantic_ai.settings import ModelSettings
 
 from llm_bench.config.base import BaseConfig
 from llm_bench.executors.ai_executor import AIExecutor
@@ -12,46 +13,37 @@ from llm_bench.executors.mcp_server import MCPServerConfig
 from llm_bench.models.answers import QueryResult
 
 
-OPENAI_REASONING_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh"}
-ANTHROPIC_REASONING_EFFORTS = {"low", "medium", "high", "max"}
+def _create_model(model_name: str) -> Model:
+    """Create a pydantic-ai Model from a 'provider:model' string."""
+    provider, bare_name = model_name.split(":", 1)
+    if provider == "openai":
+        return OpenAIResponsesModel(bare_name)
+    if provider == "anthropic":
+        return AnthropicModel(bare_name)
+    return infer_model(model_name)
 
 
-def get_pydantic_ai_model(model_name: str, config: BaseConfig) -> Model:
-    """Create a pydantic-ai model instance from a model name.
-
-    If config.reasoning_effort is set, provider-specific model settings
-    are passed to the model constructor.
-    """
-    settings = None
+def _build_model_settings(config: BaseConfig) -> ModelSettings | None:
+    """Build provider-specific model settings from config."""
     effort = config.reasoning_effort
+    if effort is None:
+        return None
 
-    if effort is not None:
-        if model_name.startswith("gpt"):
-            if effort not in OPENAI_REASONING_EFFORTS:
-                raise ValueError(
-                    f"Invalid reasoning_effort '{effort}' for OpenAI. Must be one of: {sorted(OPENAI_REASONING_EFFORTS)}"
-                )
-            settings = OpenAIResponsesModelSettings(openai_reasoning_effort=effort)
-        elif model_name.startswith("claude"):
-            if effort not in ANTHROPIC_REASONING_EFFORTS:
-                raise ValueError(
-                    f"Invalid reasoning_effort '{effort}' for Anthropic. Must be one of: {sorted(ANTHROPIC_REASONING_EFFORTS)}"
-                )
-            settings = AnthropicModelSettings(anthropic_effort=effort)
-
-    if model_name.startswith("gpt"):
-        return OpenAIResponsesModel(model_name, settings=settings)
-    if model_name.startswith("claude"):
-        return AnthropicModel(model_name, settings=settings)
-    raise ValueError(f"Unsupported model name: {model_name}")
+    provider = config.model_name.split(":")[0]
+    if provider == "openai":
+        return OpenAIResponsesModelSettings(openai_reasoning_effort=effort)
+    if provider == "anthropic":
+        return AnthropicModelSettings(anthropic_effort=effort)
+    return None
 
 
 def execute_prompt_pydantic_ai(
     prompt: str, config: BaseConfig, mcp_config: Optional["MCPServerConfig"] = None
 ) -> QueryResult:
     """Execute prompt using pydantic-ai."""
-    model = get_pydantic_ai_model(config.model_name.value, config)
-    executor = AIExecutor(model=model, config=config, mcp_config=mcp_config)
+    model = _create_model(config.model_name)
+    model_settings = _build_model_settings(config)
+    executor = AIExecutor(model=model, config=config, mcp_config=mcp_config, model_settings=model_settings)
     result = executor.execute_prompt_sync(prompt, timeout=config.llm_timeout)
     token_usage = executor.get_token_usage()
     model_name = executor.get_model_name()

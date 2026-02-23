@@ -14,17 +14,12 @@ Or use the convenience imports from this package:
 
 # Re-export key components from llm_bench for convenience
 from llm_bench import (
-    # Config
     BaseConfig,
-    # Exceptions
     BenchmarkError,
-    # Runners
     BenchmarkRunner,
     BenchmarkServices,
     ComparisonError,
-    # Models
     ComparisonResult,
-    # Services
     ComparisonService,
     ConfigurationError,
     ConfigurationManager,
@@ -32,7 +27,6 @@ from llm_bench import (
     DatabaseExecutionResult,
     DatabaseService,
     MCPConfig,
-    ModelName,
     QueryGenerationError,
     QueryGenerationResult,
     QueryGenerationService,
@@ -48,6 +42,7 @@ from llm_bench import (
     config_manager,
     run_matrix_benchmark,
     run_single_benchmark,
+    validate_configs,
 )
 
 
@@ -65,7 +60,6 @@ __all__ = [
     "DatabaseExecutionResult",
     "DatabaseService",
     "MCPConfig",
-    "ModelName",
     "QueryGenerationError",
     "QueryGenerationResult",
     "QueryGenerationService",
@@ -81,4 +75,5 @@ __all__ = [
     "config_manager",
     "run_matrix_benchmark",
     "run_single_benchmark",
+    "validate_configs",
 ]

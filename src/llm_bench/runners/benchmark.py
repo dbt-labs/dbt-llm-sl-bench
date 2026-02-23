@@ -330,7 +330,7 @@ def run_single_benchmark(
         max_workers: Maximum number of parallel workers for challenge processing
         batch_id: Optional batch_id to use for this run (generated if None)
     """
-    logger.info(f"Running single benchmark: {config.strategy} with {config.model_name.value}")
+    logger.info(f"Running single benchmark: {config.strategy} with {config.model_name}")
 
     if challenges is None:
         logger.debug("Loading challenges from file...")
@@ -403,7 +403,7 @@ def run_matrix_benchmark(
             logger.info("")
             logger.info("=" * 80)
             logger.info(
-                f"Config {idx}/{len(configs)}: {config.strategy} with {config.model_name.value}"
+                f"Config {idx}/{len(configs)}: {config.strategy} with {config.model_name}"
             )
             logger.info("=" * 80)
 
@@ -442,7 +442,7 @@ def run_matrix_benchmark(
         thread_id = threading.get_ident()
 
         logger.info(
-            f"[Thread-{thread_id}] Starting config {index + 1}/{len(configs)}: {config.strategy} with {config.model_name.value}"
+            f"[Thread-{thread_id}] Starting config {index + 1}/{len(configs)}: {config.strategy} with {config.model_name}"
         )
 
         try:
@@ -454,11 +454,11 @@ def run_matrix_benchmark(
                 batch_id=batch_id,
             )
             logger.info(
-                f"[Thread-{thread_id}] ✅ Completed {config.strategy} with {config.model_name.value} - {len(answers)} answers generated"
+                f"[Thread-{thread_id}] ✅ Completed {config.strategy} with {config.model_name} - {len(answers)} answers generated"
             )
             return index, answers, results
         except Exception as e:
-            logger.error(f"[Thread-{thread_id}] ❌ ERROR in {config.strategy} with {config.model_name.value}: {e!s}")
+            logger.error(f"[Thread-{thread_id}] ❌ ERROR in {config.strategy} with {config.model_name}: {e!s}")
             logger.exception(e)
             return index, [], pd.DataFrame()
 

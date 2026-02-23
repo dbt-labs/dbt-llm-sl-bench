@@ -6,29 +6,9 @@ from llm_bench.config import (
     BaseConfig,
     ConfigurationManager,
     MCPConfig,
-    ModelName,
     SemanticLayerConfig,
     SQLConfig,
 )
-
-
-class TestModelName:
-    """Tests for ModelName enum"""
-
-    def test_model_name_values(self) -> None:
-        """Test that ModelName enum has expected values"""
-        assert ModelName.GPT_5.value == "gpt-5"
-        assert ModelName.GPT_5_MINI.value == "gpt-5-mini"
-        assert ModelName.GPT_5_NANO.value == "gpt-5-nano"
-        assert ModelName.CLAUDE_SONNET_4.value == "claude-sonnet-4-20250514"
-        assert ModelName.CLAUDE_SONNET_4_5.value == "claude-sonnet-4-5"
-
-    def test_model_name_members(self) -> None:
-        """Test that ModelName enum has members and all are valid"""
-        assert len(ModelName) > 0
-        for member in ModelName:
-            assert isinstance(member.value, str)
-            assert len(member.value) > 0
 
 
 class TestBaseConfig:
@@ -36,7 +16,7 @@ class TestBaseConfig:
 
     def test_base_config_initialization(self, base_config) -> None:
         """Test that BaseConfig initializes with default values"""
-        assert base_config.model_name == ModelName.GPT_5
+        assert base_config.model_name == "openai:gpt-5"
         assert base_config.number_of_iterations == 1
         assert base_config.database_file == "test_llm_bench.db"
 

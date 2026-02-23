@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from llm_bench.config import ModelName, SQLConfig
+from llm_bench.config import SQLConfig
 from llm_bench.runners import run_single_benchmark
 from llm_bench.utils.challenge_loader import load_challenges_from_ttl
 
@@ -16,7 +16,7 @@ class TestEndToEndBenchmark:
     def test_single_benchmark_sql_strategy(self, temp_database) -> None:
         """Test running a complete benchmark with SQL strategy"""
         config = SQLConfig(
-            model_name=ModelName.GPT_5,
+            model_name="openai:gpt-5",
             number_of_iterations=1,
             database_file=temp_database,
             ddl_file="ACME_small.ddl",
@@ -71,7 +71,7 @@ class TestBenchmarkWorkflow:
         """Test creating services from config"""
         from llm_bench.config import config_manager
 
-        config = SQLConfig(model_name=ModelName.GPT_5)
+        config = SQLConfig(model_name="openai:gpt-5")
         services = config_manager.create_services(config)
 
         assert services.config == config
@@ -85,7 +85,7 @@ class TestBenchmarkWorkflow:
         from llm_bench.config import config_manager
         from llm_bench.runners import BenchmarkRunner
 
-        config = SQLConfig(model_name=ModelName.GPT_5)
+        config = SQLConfig(model_name="openai:gpt-5")
         services = config_manager.create_services(config)
         runner = BenchmarkRunner(services)
 
@@ -95,11 +95,11 @@ class TestBenchmarkWorkflow:
 
     def test_factory_creates_consistent_answers(self) -> None:
         """Test that factory creates answers with consistent config"""
-        from llm_bench.config import BaseConfig, ModelName
+        from llm_bench.config import BaseConfig
         from llm_bench.factories import SQLAnswerFactory
         from llm_bench.models import SQLAnswerRequest
 
-        config = BaseConfig(model_name=ModelName.CLAUDE_SONNET_4)
+        config = BaseConfig(model_name="anthropic:claude-sonnet-4-20250514")
         factory = SQLAnswerFactory(config)
 
         request = SQLAnswerRequest(
@@ -109,4 +109,4 @@ class TestBenchmarkWorkflow:
         answer = factory.create_answer(request)
 
         # Verify config is applied
-        assert answer.model == ModelName.CLAUDE_SONNET_4.value
+        assert answer.model == "anthropic:claude-sonnet-4-20250514"

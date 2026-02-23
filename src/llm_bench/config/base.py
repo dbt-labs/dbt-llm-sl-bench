@@ -1,26 +1,8 @@
-"""Base configuration classes and enums."""
+"""Base configuration classes."""
 
 from dataclasses import dataclass, field
-from enum import Enum
 
 from llm_bench.config.settings import settings
-
-
-class ModelName(Enum):
-    """Supported AI model names."""
-
-    GPT_5_NANO = "gpt-5-nano"
-    GPT_5_MINI = "gpt-5-mini"
-    GPT_5 = "gpt-5"
-    GPT_5_1_CODEX = "gpt-5.1-codex"
-    GPT_5_1 = "gpt-5.1"
-    GPT_5_2 = "gpt-5.2"
-    CLAUDE_SONNET_3_7 = "claude-3-7-sonnet-20250219"
-    CLAUDE_SONNET_4 = "claude-sonnet-4-20250514"
-    CLAUDE_SONNET_4_5 = "claude-sonnet-4-5"
-    CLAUDE_SONNET_4_6 = "claude-sonnet-4-6"
-    CLAUDE_OPUS_4_5 = "claude-opus-4-5"
-    CLAUDE_OPUS_4_6 = "claude-opus-4-6"
 
 
 @dataclass
@@ -31,7 +13,7 @@ class BaseConfig:
     dbt_sl_service_token: str = field(default_factory=lambda: settings.dbt_sl_service_token)
 
     # Model Configuration
-    model_name: ModelName = ModelName.GPT_5
+    model_name: str = "openai:gpt-5"
     reasoning_effort: str | None = None
 
     # Benchmark Configuration

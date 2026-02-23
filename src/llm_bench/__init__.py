@@ -7,11 +7,11 @@ from llm_bench.config import (
     BaseConfig,
     ConfigurationManager,
     MCPConfig,
-    ModelName,
     SemanticLayerConfig,
     SQLConfig,
     config,
     config_manager,
+    validate_configs,
 )
 from llm_bench.exceptions import (
     BenchmarkError,
@@ -57,7 +57,6 @@ __all__ = [
     "DatabaseExecutionResult",
     "DatabaseService",
     "MCPConfig",
-    "ModelName",
     "QueryGenerationError",
     "QueryGenerationResult",
     "QueryGenerationService",
@@ -73,4 +72,5 @@ __all__ = [
     "config_manager",
     "run_matrix_benchmark",
     "run_single_benchmark",
+    "validate_configs",
 ]

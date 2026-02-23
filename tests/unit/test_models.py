@@ -22,7 +22,7 @@ class TestSQLAnswer:
         """Test creating a SQLAnswer"""
         assert sample_sql_answer.challenge_text == "How many policies do we have?"
         assert sample_sql_answer.method == "sql"
-        assert sample_sql_answer.model == "gpt-5"
+        assert sample_sql_answer.model == "openai:gpt-5"
         assert sample_sql_answer.is_successful is True
 
     def test_sql_answer_defaults(self) -> None:

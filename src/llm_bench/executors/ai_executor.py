@@ -8,6 +8,7 @@ from typing import Any, Optional
 from loguru import logger
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
+from pydantic_ai.settings import ModelSettings
 
 from llm_bench.config.base import BaseConfig
 from llm_bench.executors.mcp_server import MCPServerConfig
@@ -17,7 +18,12 @@ class AIExecutor:
     """Executor for AI prompts with optional MCP server support and token tracking."""
 
     def __init__(
-        self, model: Model, config: BaseConfig, api_key: str | None = None, mcp_config: Optional["MCPServerConfig"] = None
+        self,
+        model: Model,
+        config: BaseConfig,
+        api_key: str | None = None,
+        mcp_config: Optional["MCPServerConfig"] = None,
+        model_settings: ModelSettings | None = None,
     ) -> None:
         logger.debug(f"[AIExecutor] Initializing with model: {model}")
         self.model = model
@@ -44,6 +50,7 @@ class AIExecutor:
             model=self.model,
             output_type=str,
             toolsets=toolsets if toolsets else None,
+            model_settings=model_settings,
             system_prompt="You are an assistant that returns SQL text to be executed. Only return the raw SQL code as it will be run verbatim. No code block, no markdown, no comments, no triple backticks.",
         )
         logger.debug("[AIExecutor] Agent initialized successfully")

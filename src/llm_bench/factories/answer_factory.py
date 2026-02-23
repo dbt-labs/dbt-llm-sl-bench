@@ -14,7 +14,7 @@ class SQLAnswerFactory:
 
     def _model_display_name(self, model_name: str | None = None) -> str:
         """Build the model name for recording, appending reasoning effort if set."""
-        name = model_name or self.config.model_name.value
+        name = model_name or self.config.model_name
         if self.config.reasoning_effort:
             name = f"{name}:effort={self.config.reasoning_effort}"
         return name

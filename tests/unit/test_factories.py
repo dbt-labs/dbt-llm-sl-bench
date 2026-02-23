@@ -2,7 +2,7 @@
 
 import pytest
 
-from llm_bench.config import BaseConfig, ModelName
+from llm_bench.config import BaseConfig
 from llm_bench.factories import SQLAnswerFactory
 from llm_bench.models import QueryGenerationResult, SQLAnswerRequest
 
@@ -13,13 +13,13 @@ class TestSQLAnswerFactory:
     @pytest.fixture
     def factory(self):
         """Create a factory with test config"""
-        config = BaseConfig(model_name=ModelName.GPT_5)
+        config = BaseConfig(model_name="openai:gpt-5")
         return SQLAnswerFactory(config)
 
     def test_factory_initialization(self, factory) -> None:
         """Test factory initializes with config"""
         assert factory.config is not None
-        assert factory.config.model_name == ModelName.GPT_5
+        assert factory.config.model_name == "openai:gpt-5"
 
     def test_create_answer_success(self, factory) -> None:
         """Test creating a successful answer"""
@@ -37,7 +37,7 @@ class TestSQLAnswerFactory:
 
         assert answer.challenge_text == "Test question"
         assert answer.method == "sql"
-        assert answer.model == "gpt-5"
+        assert answer.model == "openai:gpt-5"
         assert answer.is_successful is True
         assert answer.sql == "SELECT * FROM table"
         assert answer.error == ""
@@ -136,4 +136,4 @@ class TestSQLAnswerFactory:
         )
         answer = factory.create_answer(request)
 
-        assert answer.model == "gpt-5"
+        assert answer.model == "openai:gpt-5"
