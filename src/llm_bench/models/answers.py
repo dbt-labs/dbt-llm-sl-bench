@@ -17,6 +17,7 @@ class SQLAnswer:
     sql: str = ""
     data: pd.DataFrame = field(default_factory=pd.DataFrame)
     token_usage: dict | None = None
+    cost: float | None = None
     is_successful: bool = False
     error: str = ""
     prompt: str = ""

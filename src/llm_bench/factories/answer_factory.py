@@ -4,6 +4,7 @@ from llm_bench.config.base import BaseConfig
 from llm_bench.models.answers import SQLAnswer
 from llm_bench.models.requests import SQLAnswerRequest
 from llm_bench.models.results import QueryGenerationResult
+from llm_bench.pricing import calculate_cost
 
 
 class SQLAnswerFactory:
@@ -32,6 +33,8 @@ class SQLAnswerFactory:
             batch_id=request.batch_id,
             config_comment=self.config.config_comment,
         )
+
+        answer.cost = calculate_cost(self.config.model_name, request.token_usage)
 
         if request.success:
             answer.is_successful = True

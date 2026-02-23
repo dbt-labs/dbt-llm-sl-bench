@@ -191,6 +191,7 @@ class BenchmarkRunner:
             "generated_query_text": answer.sql if answer.is_successful else str(answer.error),
             # timings
             "generation_timing": answer.timing,
+            "cost": answer.cost,
             # dataframes
             "gold_query_df": gold_df.to_string() if gold_df_success else "",
             "generated_df": answer.data.to_string() if not answer.data.empty else "",
@@ -250,6 +251,7 @@ class BenchmarkRunner:
                 "generated_query_text",
                 # timings
                 "generation_timing",
+                "cost",
                 # dataframes
                 "gold_query_df",
                 "generated_df",

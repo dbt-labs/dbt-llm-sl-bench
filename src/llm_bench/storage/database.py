@@ -39,9 +39,11 @@ def save_sql_answer(answer: SQLAnswer, database_file: str, max_retries: int = 10
                 answer_dict.pop("data")  # Remove DataFrame object
 
                 # Create DataFrame and let DuckDB handle the insertion
-                answer_df = pd.DataFrame([answer_dict])
+                answer_df = pd.DataFrame([answer_dict])  # noqa: F841 - used by DuckDB SQL via variable name
                 conn.execute("CREATE TABLE IF NOT EXISTS sql_answers AS SELECT * FROM answer_df WHERE 1=0")
                 conn.execute("alter table sql_answers alter token_usage type JSON")  # in case the first one was empty
+                # Add cost column to existing tables that predate the pricing feature
+                conn.execute("ALTER TABLE sql_answers ADD COLUMN IF NOT EXISTS cost DOUBLE")
                 conn.execute("INSERT INTO sql_answers BY NAME SELECT * FROM answer_df")
                 conn.close()
                 logger.debug("Successfully saved SQLAnswer to database")
@@ -58,9 +60,10 @@ def save_sql_answer(answer: SQLAnswer, database_file: str, max_retries: int = 10
                 if "could not set lock on file" in error_msg or "database is locked" in error_msg:
                     if attempt < max_retries - 1:
                         # Random delay between 0.1 and 2 seconds, increasing with attempts
-                        delay = random.uniform(0.1, 0.5) * (attempt + 1)
+                        delay = random.uniform(0.1, 0.5) * (attempt + 1)  # noqa: S311 - not cryptographic
                         logger.warning(
-                            f"Database busy, retrying save_sql_answer in {delay:.2f}s (attempt {attempt + 1}/{max_retries})"
+                            f"Database busy, retrying save_sql_answer in {delay:.2f}s "
+                            f"(attempt {attempt + 1}/{max_retries})"
                         )
                         time.sleep(delay)
                         continue

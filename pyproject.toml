@@ -89,6 +89,7 @@ ignore = [
     "PLR2004", # Allow magic values in tests
     "PLC0415", # Allow imports inside functions in tests (lazy loading)
     "ANN001",  # Allow missing argument annotations in tests (fixtures)
+    "PT019",   # Allow unused mock fixtures injected by @patch decorators
 ]
 "**/__init__.py" = [
     "F401",    # Allow unused imports in __init__.py
