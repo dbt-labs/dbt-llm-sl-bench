@@ -12,12 +12,19 @@ class SQLAnswerFactory:
     def __init__(self, config: BaseConfig) -> None:
         self.config = config
 
-    def create_answer(self, request: SQLAnswerRequest) -> SQLAnswer:
+    def _model_display_name(self, model_name: str | None = None) -> str:
+        """Build the model name for recording, appending reasoning effort if set."""
+        name = model_name or self.config.model_name.value
+        if self.config.reasoning_effort:
+            name = f"{name}:effort={self.config.reasoning_effort}"
+        return name
+
+    def create_answer(self, request: SQLAnswerRequest, model_name: str | None = None) -> SQLAnswer:
         """Create a SQLAnswer object from a request"""
         answer = SQLAnswer(
             challenge_text=request.challenge_text,
             method=request.method,
-            model=self.config.model_name.value,
+            model=self._model_display_name(model_name),
             timing=request.timing,
             prompt=request.prompt,
             token_usage=request.token_usage,
@@ -125,4 +132,4 @@ class SQLAnswerFactory:
             iteration=iteration,
             batch_id=batch_id,
         )
-        return self.create_answer(request)
+        return self.create_answer(request, model_name=result.model_name)

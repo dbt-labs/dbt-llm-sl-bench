@@ -91,7 +91,7 @@ class SemanticLayerQueryStrategy(QueryStrategy):
             timing = time.time() - start_time
             logger.info(f"[SemanticLayer] ✅ Generated SL query (took {timing:.2f}s)")
             logger.debug(f"[SemanticLayer] Query result: {query_result.text[:100]}...")
-            return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage)
+            return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage, query_result.model_name)
         except Exception as e:
             timing = time.time() - start_time
             logger.error(f"[SemanticLayer] ❌ Failed to generate query after {timing:.2f}s: {e}")
@@ -150,7 +150,7 @@ class MCPQueryStrategy(QueryStrategy):
             timing = time.time() - start_time
             logger.info(f"[MCP] ✅ Generated MCP SL query (took {timing:.2f}s)")
             logger.debug(f"[MCP] Query result: {query_result.text[:100]}...")
-            return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage)
+            return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage, query_result.model_name)
         except Exception as e:
             timing = time.time() - start_time
             logger.error(f"[MCP] ❌ Failed to generate query after {timing:.2f}s: {e}")
@@ -189,7 +189,7 @@ class SQLQueryStrategy(QueryStrategy):
             timing = time.time() - start_time
             logger.info(f"[SQL] ✅ Generated SQL (took {timing:.2f}s)")
             logger.debug(f"[SQL] Query result: {query_result.text[:100]}...")
-            return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage)
+            return QueryGenerationResult.success_result(query_result.text, prompt, timing, query_result.usage, query_result.model_name)
         except Exception as e:
             timing = time.time() - start_time
             logger.error(f"[SQL] ❌ Failed to generate query after {timing:.2f}s: {e}")

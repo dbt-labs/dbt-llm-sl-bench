@@ -35,3 +35,4 @@ class QueryResult:
 
     text: str
     usage: dict | None = None
+    model_name: str | None = None

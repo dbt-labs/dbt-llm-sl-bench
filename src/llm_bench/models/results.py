@@ -15,13 +15,14 @@ class QueryGenerationResult:
     prompt: str
     timing: float
     token_usage: dict | None
+    model_name: str | None = None
 
     @classmethod
     def success_result(
-        cls, query: str, prompt: str, timing: float, token_usage: dict | None = None
+        cls, query: str, prompt: str, timing: float, token_usage: dict | None = None, model_name: str | None = None
     ) -> "QueryGenerationResult":
         """Create a successful query generation result."""
-        return cls(True, query, None, prompt, timing, token_usage)
+        return cls(True, query, None, prompt, timing, token_usage, model_name)
 
     @classmethod
     def error_result(cls, error: Exception, prompt: str, timing: float) -> "QueryGenerationResult":

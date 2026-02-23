@@ -186,7 +186,7 @@ class BenchmarkRunner:
             "invocation_timestamp": invocation_timestamp,
             "iteration_num": i,
             "strategy": strategy,
-            "model": self.services.config.model_name.value,
+            "model": answer.model,
             "library": self.services.config.library_name,
             "gold_query_text": gold_query_text,
             "generated_query_text": answer.sql if answer.is_successful else str(answer.error),

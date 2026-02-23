@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from loguru import logger
 from pydantic_ai import Agent
+from pydantic_ai.models import Model
 
 from llm_bench.config.base import BaseConfig
 from llm_bench.executors.mcp_server import MCPServerConfig
@@ -16,7 +17,7 @@ class AIExecutor:
     """Executor for AI prompts with optional MCP server support and token tracking."""
 
     def __init__(
-        self, model: str, config: BaseConfig, api_key: str | None = None, mcp_config: Optional["MCPServerConfig"] = None
+        self, model: Model, config: BaseConfig, api_key: str | None = None, mcp_config: Optional["MCPServerConfig"] = None
     ) -> None:
         logger.debug(f"[AIExecutor] Initializing with model: {model}")
         self.model = model
@@ -24,6 +25,7 @@ class AIExecutor:
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.mcp_config = mcp_config
         self.last_usage: dict[str, Any] | None = None
+        self.last_model_name: str | None = None
 
         # Create toolsets for the agent
         toolsets = []
@@ -80,9 +82,21 @@ class AIExecutor:
             self.last_usage = None
             logger.debug("[AIExecutor] No token usage information available")
 
+        # Extract resolved model name from the last model response
+        self.last_model_name = None
+        for message in reversed(result.all_messages()):
+            if hasattr(message, "kind") and message.kind == "response":
+                self.last_model_name = message.model_name
+                logger.debug(f"[AIExecutor] Resolved model name: {self.last_model_name}")
+                break
+
         logger.debug(f"[AIExecutor] Execution complete, output length: {len(result.output)} characters")
         return result.output
 
     def get_token_usage(self) -> dict[str, Any] | None:
         """Get token usage from the last executed prompt."""
         return self.last_usage
+
+    def get_model_name(self) -> str | None:
+        """Get the resolved model name from the last executed prompt."""
+        return self.last_model_name
