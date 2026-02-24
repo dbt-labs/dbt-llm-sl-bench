@@ -14,8 +14,16 @@ class SQLAnswerFactory:
         self.config = config
 
     def _model_display_name(self, model_name: str | None = None) -> str:
-        """Build the model name for recording, appending reasoning effort if set."""
+        """Build the model name for recording, appending reasoning effort if set.
+
+        Uses the API-resolved model_name when available (may contain date
+        suffixes or other details), but ensures the provider prefix from
+        the config is always present for consistency.
+        """
+        provider = self.config.model_name.split(":")[0]
         name = model_name or self.config.model_name
+        if not name.startswith(f"{provider}:"):
+            name = f"{provider}:{name}"
         if self.config.reasoning_effort:
             name = f"{name}:effort={self.config.reasoning_effort}"
         return name
