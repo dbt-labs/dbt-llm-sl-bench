@@ -26,7 +26,7 @@ def validate_configs(configs: list[BaseConfig]) -> None:
     errors: list[str] = []
 
     for i, config in enumerate(configs):
-        prefix = f"Config {i}" if len(configs) > 1 else "Config"
+        prefix = f"Config {i + 1}" if len(configs) > 1 else "Config"
         name = config.model_name
 
         if ":" not in name:

@@ -270,7 +270,7 @@ class BenchmarkRunner:
             logger.info("")
             logger.info("=" * 80)
             logger.info(
-                f"Iteration {i}/{self.services.config.number_of_iterations - 1}: Processing {len(filtered_challenges)} challenges"
+                f"Iteration {i + 1}/{self.services.config.number_of_iterations}: Processing {len(filtered_challenges)} challenges"
             )
             logger.info("=" * 80)
 
