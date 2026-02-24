@@ -142,7 +142,8 @@ def calculate_cost(model_name: str, token_usage: dict | None) -> float | None:
     # The input_tokens from PydanticAI already excludes cache_read_tokens
     cost = (input_tokens * entry.input + output_tokens * entry.output) / 1_000_000
 
-    if cache_read_tokens and entry.input_cached is not None:
-        cost += (cache_read_tokens * entry.input_cached) / 1_000_000
+    if cache_read_tokens:
+        cached_rate = entry.input_cached if entry.input_cached is not None else entry.input
+        cost += (cache_read_tokens * cached_rate) / 1_000_000
 
     return cost

@@ -86,6 +86,14 @@ class TestCalculateCost:
         token_usage = {"input_tokens": 100, "output_tokens": 50}
         assert calculate_cost("unknown-model", token_usage) is None
 
+    def test_cost_with_cached_tokens_but_no_cached_price(self, _mock_fetch) -> None:
+        """When input_cached price is missing, cache_read_tokens are charged at the full input rate."""
+        token_usage = {"input_tokens": 800, "output_tokens": 200, "cache_read_tokens": 500}
+        cost = calculate_cost("anthropic:claude-sonnet-4-5", token_usage)
+        # claude-sonnet-4.5 has input=3.0, output=15.0, input_cached=None
+        # (800 * 3.0 + 200 * 15.0) / 1_000_000 + (500 * 3.0) / 1_000_000 = 0.006900
+        assert cost == pytest.approx(0.0069)
+
     def test_version_normalization_in_cost(self, _mock_fetch) -> None:
         """End-to-end: PydanticAI-style name resolves and calculates cost."""
         token_usage = {"input_tokens": 2000, "output_tokens": 1000}
