@@ -42,6 +42,20 @@ class BenchmarkRunner:
         self.strategy = getattr(services.config, "strategy", None)
         self.batch_id = 0  # Will be set at the start of each benchmark run
 
+    @staticmethod
+    def _is_client_error(error: BaseException | None) -> bool:
+        """Check if an error is a non-retryable HTTP 4xx client error.
+
+        Returns True for 4xx status codes except 429 (rate limit), which is
+        transient and worth retrying.
+        """
+        if error is None:
+            return False
+        status_code = getattr(error, "status_code", None)
+        if status_code is None:
+            return False
+        return 400 <= status_code < 500 and status_code != 429
+
     def _generate_query_with_retry(
         self, strategy: str, question: str, iteration: int, context: dict[str, Any] | None = None, max_retries: int = 5
     ) -> SQLAnswer:
@@ -63,6 +77,15 @@ class BenchmarkRunner:
                 if result.success:
                     logger.debug(f"Query generation successful on attempt {retry_count + 1}")
                     return answer
+
+                # Don't retry on 4xx client errors (except 429 rate limits)
+                if self._is_client_error(result.error):
+                    logger.error(
+                        f"Non-retryable client error ({getattr(result.error, 'status_code', '?')}) "
+                        f"in {strategy} generation: {result.error}"
+                    )
+                    return answer
+
                 retry_count += 1
                 if retry_count < max_retries:
                     logger.warning(
@@ -76,6 +99,25 @@ class BenchmarkRunner:
                     return answer
 
             except Exception as e:
+                # Don't retry on 4xx client errors (except 429 rate limits)
+                if self._is_client_error(e):
+                    logger.error(
+                        f"Non-retryable client error ({getattr(e, 'status_code', '?')}) "
+                        f"in {strategy} generation: {e}"
+                    )
+                    error_request = SQLAnswerRequest(
+                        challenge_text=question,
+                        method=strategy,
+                        success=False,
+                        query_or_error=e,
+                        timing=0.0,
+                        prompt="",
+                        token_usage=None,
+                        iteration=iteration,
+                        batch_id=self.batch_id,
+                    )
+                    return self.services.factory.create_answer(error_request)
+
                 retry_count += 1
                 if retry_count < max_retries:
                     logger.warning(f"Exception in {strategy} generation: {e} (attempt {retry_count}/{max_retries})")
