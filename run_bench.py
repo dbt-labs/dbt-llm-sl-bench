@@ -103,12 +103,9 @@ if __name__ == "__main__":
     # from llm_bench.config import semantic_config
     # sql_answers_list, results_df = run_single_benchmark(semantic_config)
 
-    # Model × thinking-level matrix across SQL and Semantic Layer strategies
+    # GPT-5.3 Codex — thinking-level comparison (5 iterations)
     model_efforts: list[tuple[str, list[str]]] = [
-        ("anthropic:claude-opus-4-6", ["low", "medium", "high", "max"]),
-        ("anthropic:claude-sonnet-4-6", ["low", "medium", "high", "max"]),
-        ("openai:gpt-5.2", ["none", "minimal", "low", "medium", "high", "xhigh"]),
-        ("openai:gpt-5.1-codex", ["none", "minimal", "low", "medium", "high", "xhigh"]),
+        ("openai:gpt-5.3-codex", ["none", "minimal", "low", "medium", "high", "xhigh"]),
     ]
 
     example_configs = []
@@ -120,7 +117,7 @@ if __name__ == "__main__":
                 )
 
     # Validate all configs before running
-    validate_configs(example_configs)
+    validate_configs(example_configs)  # TODO: re-enable once pydantic-ai adds gpt-5.3-codex
 
     # Load challenges once and share across all configs (more efficient than loading per thread)
     from llm_bench.utils.challenge_loader import load_challenges_from_ttl
