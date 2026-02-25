@@ -1,234 +1,168 @@
 ---
-title: Benchmark analysis
+title: Benchmark Overview
 ---
 
-## Re-runnnging the benchmark
+```sql available_batch_ids
+select distinct batch_id
+from sql_answers
+where batch_id != -1
+order by batch_id desc
+```
 
-```sql grouped_benchmark_2023
-with data as (
-  select
-    * from sql_answers where batch_id in (-1)
-)
+```sql available_models
+select distinct
+  model,
+  replace(replace(model, 'anthropic:', ''), 'openai:', '') as model_label
+from sql_answers
+where batch_id IN ${inputs.selected_batch_ids.value}
+order by model_label
+```
 
+<DefaultValue
+    name=selected_batch_ids
+    value="(select max(batch_id) from sql_answers where batch_id != -1)"
+/>
+
+<Dropdown
+    data={available_batch_ids}
+    name=selected_batch_ids
+    value=batch_id
+    multiple=true
+    selectAllByDefault=false
+    noDefault=true
+    title="Select Batch IDs"
+    order="batch_id desc"
+/>
+
+<Dropdown
+    data={available_models}
+    name=selected_models
+    value=model
+    label=model_label
+    multiple=true
+    selectAllByDefault=true
+    title="Select Models"
+/>
+
+```sql overview_sl
 select
-  sort_order::int::string || ' - ' || left(challenge_text, 25) as challenge_text,
+  count(*) as "Total Runs",
+  round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %"
+from sql_answers
+where batch_id IN ${inputs.selected_batch_ids.value}
+  and model IN ${inputs.selected_models.value}
+  and method = 'semantic_layer'
+```
+
+```sql overview_sql
+select
+  count(*) as "Total Runs",
+  round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %"
+from sql_answers
+where batch_id IN ${inputs.selected_batch_ids.value}
+  and model IN ${inputs.selected_models.value}
+  and method = 'sql'
+```
+
+<BigValue data={overview_sl} value="Accuracy %" comparison="Total Runs" comparisonTitle="runs" title="Semantic Layer" fmt=num1 comparisonFmt=num0 />
+<BigValue data={overview_sql} value="Accuracy %" comparison="Total Runs" comparisonTitle="runs" title="SQL" fmt=num1 comparisonFmt=num0 />
+
+## Accuracy by Question
+
+```sql by_question
+select
+  sort_order::int::string || ' - ' || left(challenge_text, 45) as question,
   sort_order,
+  too_many_hops,
   case
-    when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL'
-    else "method"
+    when method = 'semantic_layer' then 'Semantic Layer'
+    when method = 'sql' then 'SQL'
+    else method
   end as "Method",
-  avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
-from data
-group by challenge_text, sort_order, "method"
-order by sort_order, "method"
+  avg(case when is_correct then 1.0 else 0.0 end) as "Accuracy"
+from sql_answers
+where batch_id IN ${inputs.selected_batch_ids.value}
+  and model IN ${inputs.selected_models.value}
+  and is_successful
+group by challenge_text, sort_order, too_many_hops, method
+order by sort_order, method
 ```
 
 <BarChart
-    data={grouped_benchmark_2023}
-    title="Nov 2023 benchmark results"
-    x=challenge_text
-    y="Percentage Correct"
-    series="Method"
+    data={by_question}
+    title="Accuracy by Question — SL vs SQL"
+    x=question
+    y=Accuracy
+    series=Method
     type=grouped
     sort=false
     yFmt=pct0
     yMax=1
-    yAxisTitle="Percentage correct"
+    yAxisTitle="Accuracy"
     swapXY=true
 />
 
+_Questions marked with sort orders 3, 6, 7 are `too_many_hops` — they require joins the Semantic Layer cannot express._
 
-```sql grouped_benchmark
-with data as (
-  select
-    * from sql_answers where batch_id in (1762980162913, 1762986595434)
-)
+## Answerable vs Too-Many-Hops
 
+```sql by_hops
 select
-  sort_order::int::string || ' - ' || left(challenge_text, 25) as challenge_text,
-  sort_order,
+  case when too_many_hops then 'Too Many Hops' else 'Answerable' end as "Category",
   case
-    when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL'
-    else "method"
+    when method = 'semantic_layer' then 'Semantic Layer'
+    when method = 'sql' then 'SQL'
+    else method
   end as "Method",
-  avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
-from data
-group by challenge_text, sort_order, "method"
-order by sort_order, "method"
+  count(*) as "Runs",
+  round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %",
+  round(avg(timing), 2) as "Avg Latency (s)"
+from sql_answers
+where batch_id IN ${inputs.selected_batch_ids.value}
+  and model IN ${inputs.selected_models.value}
+  and is_successful
+group by too_many_hops, method
+order by too_many_hops, method
 ```
 
-<BarChart
-    data={grouped_benchmark}
-    title="Nov 2025 benchmark results"
-    x=challenge_text
-    y="Percentage Correct"
-    series="Method"
-    type=grouped
-    sort=false
-    yFmt=pct0
-    yMax=1
-    yAxisTitle="Percentage correct"
-    swapXY=true
-/>
-
-### Summary
-
-
-```sql summary_table
-with data as (
-  select
-    *,
-    case
-      when batch_id = -1 then '2023'
-      when batch_id in (1762980162913, 1762986595434) then '2025'
-    end as year
-  from sql_answers
-  where batch_id in (-1, 1762980162913, 1762986595434)
-)
-
-, calc as (
-  select
-    too_many_hops,
-    year,
-    "method",
-    avg(case when is_correct then 1.0 else 0.0 end) as percentage_correct
-  from data
-  group by too_many_hops, year, "method"
-)
-
-, calc_all as (
-  select
-    null as too_many_hops,
-    year,
-    "method",
-    avg(case when is_correct then 1.0 else 0.0 end) as percentage_correct
-  from data
-  group by year, "method"
-)
-
-, combined as (
-  select * from calc
-  union all
-  select * from calc_all
-)
-
-, pivoted as (
-  pivot combined
-  on year, "method"
-  using avg(percentage_correct) as percentage_correct
-  group by too_many_hops
-)
-
-select
-  case
-    when too_many_hops is null then 'All'
-    when too_many_hops then 'True'
-    else 'False'
-  end as "Too Many Hops",
-  "2023_sql_percentage_correct" as "SQL 2023",
-  "2025_sql_percentage_correct" as "SQL 2025",
-  ("2025_sql_percentage_correct" - "2023_sql_percentage_correct") / "2023_sql_percentage_correct" as "SQL % Change",
-  "2023_semantic_layer_percentage_correct" as "SL 2023",
-  "2025_semantic_layer_percentage_correct" as "SL 2025",
-  ("2025_semantic_layer_percentage_correct" - "2023_semantic_layer_percentage_correct") / "2023_semantic_layer_percentage_correct" as "SL % Change"
-from pivoted
-order by
-  case when too_many_hops is null then 2 else 0 end,
-  too_many_hops
-```
-
-<DataTable data={summary_table}>
-  <Column id="Too Many Hops"/>
-  <Column id="SQL 2023" fmt=pct1/>
-  <Column id="SQL 2025" fmt=pct1/>
-  <Column id="SQL % Change" fmt=pct1/>
-  <Column id="SL 2023" fmt=pct1/>
-  <Column id="SL 2025" fmt=pct1/>
-  <Column id="SL % Change" fmt=pct1/>
+<DataTable data={by_hops}>
+  <Column id="Category"/>
+  <Column id="Method"/>
+  <Column id="Runs" fmt=num0/>
+  <Column id="Accuracy %" fmt=num1/>
+  <Column id="Avg Latency (s)" fmt=num2/>
 </DataTable>
 
-## Comparing 2023 and 2025 results for SQL and SL
+On **answerable** questions, the Semantic Layer reaches near-perfect accuracy while SQL lags behind. On **too-many-hops** questions, SQL can still answer some while the SL correctly returns no data.
 
-- Some results got worst:
-  - Q10 for SL
-  - Q7 for SQL
-- Some results we said had too manu hops are OK now:
-  - Q6 for SL
+## Model Leaderboard (Answerable Questions Only)
 
-```sql semantic_layer_comparison
-with data as (
-  select
-    *,
-    case
-      when batch_id = -1 then '2023'
-      when batch_id in (1762980162913, 1762986595434) then '2025'
-    end as year
-  from sql_answers
-  where batch_id in (-1, 1762980162913, 1762986595434)
-    and "method" = 'semantic_layer'
-)
-
+```sql model_leaderboard
 select
-  sort_order::int::string || ' - ' || left(challenge_text, 25) as challenge_text,
-  sort_order,
-  year as "Year",
-  avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
-from data
-group by challenge_text, sort_order, year
-order by sort_order, year
+  replace(replace(model, 'anthropic:', ''), 'openai:', '') as "Model",
+  case
+    when method = 'semantic_layer' then 'Semantic Layer'
+    when method = 'sql' then 'SQL'
+    else method
+  end as "Method",
+  count(*) as "Runs",
+  round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %",
+  round(avg(timing), 2) as "Avg Latency (s)",
+  round(sum(cost) / nullif(count(*), 0), 4) as "Avg Cost/Query ($)"
+from sql_answers
+where batch_id IN ${inputs.selected_batch_ids.value}
+  and model IN ${inputs.selected_models.value}
+  and is_successful
+  and not too_many_hops
+group by model, method
+order by "Accuracy %" desc, "Avg Latency (s)" asc
 ```
 
-<BarChart
-    data={semantic_layer_comparison}
-    title="Semantic Layer: 2023 vs 2025"
-    x=challenge_text
-    y="Percentage Correct"
-    series="Year"
-    type=grouped
-    sort=false
-    yFmt=pct0
-    yMax=1
-    yAxisTitle="Percentage correct"
-    swapXY=true
-/>
-
-
-```sql sql_comparison
-with data as (
-  select
-    *,
-    case
-      when batch_id = -1 then '2023'
-      when batch_id in (1762980162913, 1762986595434) then '2025'
-    end as year
-  from sql_answers
-  where batch_id in (-1, 1762980162913, 1762986595434)
-    and "method" = 'sql'
-)
-
-select
-  sort_order::int::string || ' - ' || left(challenge_text, 25) as challenge_text,
-  sort_order,
-  year as "Year",
-  avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
-from data
-group by challenge_text, sort_order, year
-order by sort_order, year
-```
-
-<BarChart
-    data={sql_comparison}
-    title="SQL: 2023 vs 2025"
-    x=challenge_text
-    y="Percentage Correct"
-    series="Year"
-    type=grouped
-    sort=false
-    yFmt=pct0
-    yMax=1
-    yAxisTitle="Percentage correct"
-    swapXY=true
-/>
-
+<DataTable data={model_leaderboard} search=true rows=20>
+  <Column id="Model"/>
+  <Column id="Method"/>
+  <Column id="Runs" fmt=num0/>
+  <Column id="Accuracy %" fmt=num1/>
+  <Column id="Avg Latency (s)" fmt=num2/>
+  <Column id="Avg Cost/Query ($)" fmt=num4/>
+</DataTable>

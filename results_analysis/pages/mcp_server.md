@@ -1,4 +1,0 @@
----
-title: Add MCP server
----
-
