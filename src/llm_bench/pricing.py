@@ -18,6 +18,13 @@ class PriceEntry:
     input_cached: float | None = None
 
 
+# Models missing from llm-prices.com. Website data takes priority when both exist.
+_LOCAL_PRICES: dict[str, PriceEntry] = {
+    "gpt-5.3-codex": PriceEntry(
+        id="gpt-5.3-codex", vendor="openai", input=1.75, output=14.0, input_cached=0.175
+    ),
+}
+
 _prices_cache: dict[str, PriceEntry] | None = None
 
 
@@ -44,6 +51,9 @@ def fetch_prices() -> dict[str, PriceEntry]:
     except Exception:
         logger.warning("Failed to fetch LLM pricing data; cost calculation will be unavailable")
         _prices_cache = {}
+
+    # Merge local prices (website data takes priority over local)
+    _prices_cache = {**_LOCAL_PRICES, **_prices_cache}
 
     return _prices_cache
 
@@ -91,8 +101,10 @@ def _resolve_price_id(model_name: str, price_ids: set[str]) -> str | None:
     if bare in price_ids:
         return bare
 
-    # 2. Strip date suffix (-YYYYMMDD)
-    stripped = re.sub(r"-\d{8}$", "", bare)
+    # 2. Strip date suffix (-YYYY-MM-DD or -YYYYMMDD)
+    stripped = re.sub(r"-\d{4}-\d{2}-\d{2}$", "", bare)
+    if stripped == bare:  # No hyphenated date match, try compact format
+        stripped = re.sub(r"-\d{8}$", "", bare)
     if stripped in price_ids:
         return stripped
 
