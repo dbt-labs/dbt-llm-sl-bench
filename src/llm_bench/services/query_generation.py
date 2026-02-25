@@ -81,6 +81,10 @@ class SemanticLayerQueryStrategy(QueryStrategy):
         Write a query to answer the following question. Do not explain the query, and do not say 'here is the query'. Return just the query, so it can be run
         verbatim from your response.
 
+        IMPORTANT: Your query MUST be a single `select * from {{ semantic_layer.query(...) }}` statement.
+        Do NOT use CTEs, subqueries, JOINs, UNION, or multiple semantic_layer.query() calls.
+        If the question cannot be answered with a single semantic layer query, return exactly: CANNOT_ANSWER
+
         Here's the question:
         """
         prompt += request.question
