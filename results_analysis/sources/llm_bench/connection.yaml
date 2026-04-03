@@ -1,4 +1,4 @@
 name: llm_bench
 type: duckdb
 options:
-  filename: ../../../llm_bench.db
+  filename: ../../../llm_bench_dashboard.db
