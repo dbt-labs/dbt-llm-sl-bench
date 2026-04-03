@@ -41,7 +41,7 @@ select
   round(sum(cost) / nullif(count(*), 0), 4) as "Avg Cost ($)",
   round(sum(cost), 2) as "Total Cost ($)"
 from sql_answers
-where batch_id in (1771947220583, 1772040337760)
+where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'without_modeling')
   and is_successful
   and (
     '${inputs.hops_filter_no_modeling.value}' = 'all'
@@ -57,7 +57,7 @@ order by "Accuracy %" desc, "Avg Latency (s)" asc
   <Column id="Method"/>
   <Column id="Runs" fmt=num0/>
   <Column id="Iterations" fmt=num0/>
-  <Column id="Accuracy %" fmt=num1 contentType=colorscale scaleColor={['#ff4444', '#44bb44']}/>
+  <Column id="Accuracy %" fmt=num1 contentType=colorscale colorScale={['#ff4444', '#44bb44']}/>
   <Column id="Avg Latency (s)" fmt=num2/>
   <Column id="Median Latency (s)" fmt=num2/>
   <Column id="Avg Cost ($)" fmt=num4/>
@@ -74,7 +74,7 @@ select
   end as "Method",
   round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %"
 from sql_answers
-where batch_id in (1771947220583, 1772040337760)
+where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'without_modeling')
   and is_successful
   and (
     '${inputs.hops_filter_no_modeling.value}' = 'all'
@@ -116,7 +116,7 @@ from (
     model, method, iteration,
     100.0 * sum(is_correct::int) / count(*) as iter_acc
   from sql_answers
-  where batch_id in (1771947220583, 1772040337760)
+  where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'without_modeling')
     and is_successful
     and (
       '${inputs.hops_filter_no_modeling.value}' = 'all'
@@ -132,7 +132,7 @@ order by "Std Dev" desc
 <DataTable data={consistency_no_modeling} rows=all>
   <Column id="Model"/>
   <Column id="Method"/>
-  <Column id="Mean Accuracy %" fmt=num1 contentType=colorscale scaleColor={['#ff4444', '#44bb44']}/>
+  <Column id="Mean Accuracy %" fmt=num1 contentType=colorscale colorScale={['#ff4444', '#44bb44']}/>
   <Column id="Std Dev" fmt=num1/>
   <Column id="Worst Run %" fmt=num1/>
   <Column id="Best Run %" fmt=num1/>
@@ -146,7 +146,7 @@ select
   iteration as "Iteration",
   round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %"
 from sql_answers
-where batch_id in (1771947220583, 1772040337760)
+where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'without_modeling')
   and is_successful
   and (
     '${inputs.hops_filter_no_modeling.value}' = 'all'
@@ -190,7 +190,7 @@ select
   round(sum(cost) / nullif(count(*), 0), 4) as "Avg Cost ($)",
   round(sum(cost), 2) as "Total Cost ($)"
 from sql_answers
-where batch_id in (1771950920101, 1772035331932)
+where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'with_modeling')
   and is_successful
 group by model, method
 order by "Accuracy %" desc, "Avg Latency (s)" asc
@@ -201,7 +201,7 @@ order by "Accuracy %" desc, "Avg Latency (s)" asc
   <Column id="Method"/>
   <Column id="Runs" fmt=num0/>
   <Column id="Iterations" fmt=num0/>
-  <Column id="Accuracy %" fmt=num1 contentType=colorscale scaleColor={['#ff4444', '#44bb44']}/>
+  <Column id="Accuracy %" fmt=num1 contentType=colorscale colorScale={['#ff4444', '#44bb44']}/>
   <Column id="Avg Latency (s)" fmt=num2/>
   <Column id="Median Latency (s)" fmt=num2/>
   <Column id="Avg Cost ($)" fmt=num4/>
@@ -218,7 +218,7 @@ select
   end as "Method",
   round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %"
 from sql_answers
-where batch_id in (1771950920101, 1772035331932)
+where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'with_modeling')
   and is_successful
 group by model, method
 order by "Accuracy %" desc
@@ -255,7 +255,7 @@ from (
     model, method, iteration,
     100.0 * sum(is_correct::int) / count(*) as iter_acc
   from sql_answers
-  where batch_id in (1771950920101, 1772035331932)
+  where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'with_modeling')
     and is_successful
   group by model, method, iteration
 ) sub
@@ -266,7 +266,7 @@ order by "Std Dev" desc
 <DataTable data={consistency_with_modeling} rows=all>
   <Column id="Model"/>
   <Column id="Method"/>
-  <Column id="Mean Accuracy %" fmt=num1 contentType=colorscale scaleColor={['#ff4444', '#44bb44']}/>
+  <Column id="Mean Accuracy %" fmt=num1 contentType=colorscale colorScale={['#ff4444', '#44bb44']}/>
   <Column id="Std Dev" fmt=num1/>
   <Column id="Worst Run %" fmt=num1/>
   <Column id="Best Run %" fmt=num1/>
@@ -280,7 +280,7 @@ select
   iteration as "Iteration",
   round(100.0 * sum(is_correct::int) / count(*), 1) as "Accuracy %"
 from sql_answers
-where batch_id in (1771950920101, 1772035331932)
+where batch_id in (select batch_id from batch_config where page = 'repeated_runs' and config_type = 'with_modeling')
   and is_successful
 group by model, method, iteration
 order by model, method, iteration

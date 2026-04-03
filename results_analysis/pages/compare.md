@@ -7,18 +7,11 @@ Each model was given 11 insurance-domain questions (claims, policies, premiums) 
 
 > **Note:** SQL runs on this page use the schema **without modeling** (no additional dbt models, raw DDL only).
 
-```sql available_batch_ids
-select distinct batch_id
-from sql_answers
-where batch_id != -1
-order by batch_id desc
-```
-
 ```sql available_base_models
 select distinct
   split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) as base_model
 from sql_answers
-where batch_id IN ${inputs.selected_batch_ids.value}
+where batch_id IN (select batch_id from batch_config where page = 'compare')
   and is_successful
 order by base_model
 ```
@@ -27,7 +20,7 @@ order by base_model
 select distinct
   coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') as effort
 from sql_answers
-where batch_id IN ${inputs.selected_batch_ids.value}
+where batch_id IN (select batch_id from batch_config where page = 'compare')
   and split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) IN ${inputs.selected_base_models.value}
   and is_successful
 order by case effort
@@ -35,22 +28,6 @@ order by case effort
     when 'medium' then 4 when 'high' then 5 when 'max' then 6 when 'xhigh' then 7
   end
 ```
-
-<DefaultValue
-    name=selected_batch_ids
-    value="(select batch_id from sql_answers where batch_id != -1 group by batch_id having count(*) >= 2000)"
-/>
-
-<Dropdown
-    data={available_batch_ids}
-    name=selected_batch_ids
-    value=batch_id
-    multiple=true
-    selectAllByDefault=false
-    noDefault=true
-    title="Select Batch IDs"
-    order="batch_id desc"
-/>
 
 <Dropdown
     data={available_base_models}
@@ -86,7 +63,7 @@ with parsed as (
     coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') as effort,
     method, is_correct, timing, cost
   from sql_answers
-  where batch_id IN ${inputs.selected_batch_ids.value}
+  where batch_id IN (select batch_id from batch_config where page = 'compare')
     and split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) IN ${inputs.selected_base_models.value}
     and coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') IN ${inputs.selected_efforts.value}
     and is_successful
@@ -123,7 +100,7 @@ order by "Accuracy %" desc, "Avg Latency (s)" asc
   <Column id="Effort"/>
   <Column id="Method"/>
   <Column id="Runs" fmt=num0/>
-  <Column id="Accuracy %" fmt=num1 contentType=colorscale scaleColor={['#ff4444', '#44bb44']}/>
+  <Column id="Accuracy %" fmt=num1 contentType=colorscale colorScale={['#ff4444', '#44bb44']}/>
   <Column id="Avg Latency (s)" fmt=num2/>
   <Column id="Median Latency (s)" fmt=num2/>
   <Column id="Avg Cost ($)" fmt=num4/>
@@ -140,7 +117,7 @@ with parsed as (
     coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') as effort,
     method, is_correct
   from sql_answers
-  where batch_id IN ${inputs.selected_batch_ids.value}
+  where batch_id IN (select batch_id from batch_config where page = 'compare')
     and split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) IN ${inputs.selected_base_models.value}
     and coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') IN ${inputs.selected_efforts.value}
     and is_successful
@@ -188,7 +165,7 @@ with parsed as (
     coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') as effort,
     method, timing
   from sql_answers
-  where batch_id IN ${inputs.selected_batch_ids.value}
+  where batch_id IN (select batch_id from batch_config where page = 'compare')
     and split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) IN ${inputs.selected_base_models.value}
     and coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') IN ${inputs.selected_efforts.value}
     and is_successful
@@ -248,7 +225,7 @@ with parsed as (
     coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') as effort,
     method, cost
   from sql_answers
-  where batch_id IN ${inputs.selected_batch_ids.value}
+  where batch_id IN (select batch_id from batch_config where page = 'compare')
     and split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) IN ${inputs.selected_base_models.value}
     and coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') IN ${inputs.selected_efforts.value}
     and is_successful
@@ -299,7 +276,7 @@ with parsed as (
     coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') as effort,
     method, is_correct, timing, cost
   from sql_answers
-  where batch_id IN ${inputs.selected_batch_ids.value}
+  where batch_id IN (select batch_id from batch_config where page = 'compare')
     and split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 1) IN ${inputs.selected_base_models.value}
     and coalesce(nullif(split_part(replace(replace(model, 'anthropic:', ''), 'openai:', ''), ':effort=', 2), ''), '-') IN ${inputs.selected_efforts.value}
     and is_successful

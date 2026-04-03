@@ -444,6 +444,6 @@ order by model, "method"
 <DataTable data={enhanced_summary} rows=all>
   <Column id="Model"/>
   <Column id="Method"/>
-  <Column id="Accuracy %" fmt=num1 contentType=colorscale scaleColor={['#ff4444', '#44bb44']}/>
+  <Column id="Accuracy %" fmt=num1 contentType=colorscale colorScale={['#ff4444', '#44bb44']}/>
   <Column id="Runs" fmt=num0/>
 </DataTable>
