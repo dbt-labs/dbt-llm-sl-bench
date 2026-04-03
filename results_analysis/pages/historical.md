@@ -1,8 +1,17 @@
 ---
 title: Historical Comparison (2023 vs 2026)
+sidebar_position: 3
+---
+
+The benchmark was originally run in November 2023 to test whether LLMs could answer business questions more accurately via a Semantic Layer (MetricFlow) versus generating raw SQL directly. This page re-runs those same 11 questions with modern models in March 2026 to measure how much LLMs have improved — and then shows what changes when additional dbt models are introduced to remove the "too many hops" limitation.
+
+All runs in the first three sections use raw DDL **without additional modeling**.
+
 ---
 
 ## Re-running the benchmark
+
+The first chart shows the original 2023 results per question. The two charts below re-run the same benchmark in Mar 2026 with Sonnet 4.6 and GPT-5.3 Codex respectively. The summary table at the bottom aggregates accuracy across answerable questions, too-many-hops questions, and all questions combined.
 
 ```sql grouped_benchmark_2023
 with data as (
@@ -15,7 +24,7 @@ select
   sort_order,
   case
     when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL'
+    when "method" = 'sql' then 'Text to SQL'
     else "method"
   end as "Method",
   avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
@@ -52,7 +61,7 @@ select
   sort_order,
   case
     when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL'
+    when "method" = 'sql' then 'Text to SQL'
     else "method"
   end as "Method",
   avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
@@ -63,7 +72,7 @@ order by sort_order, "method"
 
 <BarChart
     data={grouped_benchmark_sonnet}
-    title="Feb 2026 — Sonnet 4.6"
+    title="Mar 2026 — Sonnet 4.6"
     x=challenge_text
     y="Percentage Correct"
     series="Method"
@@ -89,7 +98,7 @@ select
   sort_order,
   case
     when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL'
+    when "method" = 'sql' then 'Text to SQL'
     else "method"
   end as "Method",
   avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
@@ -100,7 +109,7 @@ order by sort_order, "method"
 
 <BarChart
     data={grouped_benchmark_codex}
-    title="Feb 2026 — GPT-5.3 Codex"
+    title="Mar 2026 — GPT-5.3 Codex"
     x=challenge_text
     y="Percentage Correct"
     series="Method"
@@ -167,9 +176,9 @@ select
     when too_many_hops then 'True'
     else 'False'
   end as "Too Many Hops",
-  "2023_sql_pct" as "SQL 2023",
-  "2026 Sonnet 4.6_sql_pct" as "SQL Sonnet 4.6",
-  "2026 GPT-5.3 Codex_sql_pct" as "SQL GPT-5.3 Codex",
+  "2023_sql_pct" as "Text to SQL 2023",
+  "2026 Sonnet 4.6_sql_pct" as "Text to SQL Sonnet 4.6",
+  "2026 GPT-5.3 Codex_sql_pct" as "Text to SQL GPT-5.3 Codex",
   "2023_semantic_layer_pct" as "SL 2023",
   "2026 Sonnet 4.6_semantic_layer_pct" as "SL Sonnet 4.6",
   "2026 GPT-5.3 Codex_semantic_layer_pct" as "SL GPT-5.3 Codex"
@@ -181,15 +190,17 @@ order by
 
 <DataTable data={summary_table}>
   <Column id="Too Many Hops"/>
-  <Column id="SQL 2023" fmt=pct1/>
-  <Column id="SQL Sonnet 4.6" fmt=pct1/>
-  <Column id="SQL GPT-5.3 Codex" fmt=pct1/>
+  <Column id="Text to SQL 2023" fmt=pct1/>
+  <Column id="Text to SQL Sonnet 4.6" fmt=pct1/>
+  <Column id="Text to SQL GPT-5.3 Codex" fmt=pct1/>
   <Column id="SL 2023" fmt=pct1/>
   <Column id="SL Sonnet 4.6" fmt=pct1/>
   <Column id="SL GPT-5.3 Codex" fmt=pct1/>
 </DataTable>
 
 ## Semantic Layer: 2023 vs 2026
+
+Isolating the Semantic Layer method to compare 2023 versus 2026 performance question by question. Note that the too-many-hops questions are included here — the Semantic Layer consistently scores 0% on those regardless of year or model, since it cannot express the required joins without additional modeling.
 
 ```sql sl_comparison_sonnet
 with data as (
@@ -267,7 +278,9 @@ order by sort_order, cohort
     swapXY=true
 />
 
-## SQL: 2023 vs 2026
+## Text to SQL: 2023 vs 2026
+
+Same comparison for the Text to SQL method. Unlike the Semantic Layer, Text to SQL can attempt the too-many-hops questions — it has no built-in awareness that certain joins are problematic — so results on those questions reflect whether the model happened to produce correct SQL, not whether it correctly refused.
 
 ```sql sql_comparison_sonnet
 with data as (
@@ -295,7 +308,7 @@ order by sort_order, cohort
 
 <BarChart
     data={sql_comparison_sonnet}
-    title="SQL: 2023 vs 2026 Sonnet 4.6"
+    title="Text to SQL: 2023 vs 2026 Sonnet 4.6"
     x=challenge_text
     y="Percentage Correct"
     series="Cohort"
@@ -333,7 +346,7 @@ order by sort_order, cohort
 
 <BarChart
     data={sql_comparison_codex}
-    title="SQL: 2023 vs 2026 GPT-5.3 Codex"
+    title="Text to SQL: 2023 vs 2026 GPT-5.3 Codex"
     x=challenge_text
     y="Percentage Correct"
     series="Cohort"
@@ -345,7 +358,9 @@ order by sort_order, cohort
     swapXY=true
 />
 
-## Enhanced DDL + New SL Models (Feb 2026)
+## SQL (with modeling) + New SL Models (Mar 2026)
+
+This section shows the impact of adding dbt models to the project. Two things change: the Semantic Layer gains new models that resolve the "too many hops" limitations (so all 11 questions become answerable), and the Text to SQL generator works against a richer schema. All 11 questions are included here — the too-many-hops questions are no longer a special case.
 
 ```sql enhanced_sonnet
 select
@@ -353,7 +368,7 @@ select
   sort_order,
   case
     when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL (enhanced DDL)'
+    when "method" = 'sql' then 'SQL (with modeling)'
     else "method"
   end as "Method",
   avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
@@ -366,7 +381,7 @@ order by sort_order, "method"
 
 <BarChart
     data={enhanced_sonnet}
-    title="Sonnet 4.6 — SL (new models) vs SQL (enhanced DDL)"
+    title="Sonnet 4.6 — SL (new models) vs SQL (with modeling)"
     x=challenge_text
     y="Percentage Correct"
     series="Method"
@@ -384,7 +399,7 @@ select
   sort_order,
   case
     when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL (enhanced DDL)'
+    when "method" = 'sql' then 'SQL (with modeling)'
     else "method"
   end as "Method",
   avg(case when is_correct then 1.0 else 0.0 end) as "Percentage Correct"
@@ -397,7 +412,7 @@ order by sort_order, "method"
 
 <BarChart
     data={enhanced_codex}
-    title="GPT-5.3 Codex — SL (new models) vs SQL (enhanced DDL)"
+    title="GPT-5.3 Codex — SL (new models) vs SQL (with modeling)"
     x=challenge_text
     y="Percentage Correct"
     series="Method"
@@ -414,7 +429,7 @@ select
   replace(replace(model, 'anthropic:', ''), 'openai:', '') as "Model",
   case
     when "method" = 'semantic_layer' then 'Semantic Layer'
-    when "method" = 'sql' then 'SQL (enhanced DDL)'
+    when "method" = 'sql' then 'SQL (with modeling)'
     else "method"
   end as "Method",
   round(100.0 * avg(case when is_correct then 1.0 else 0.0 end), 1) as "Accuracy %",
