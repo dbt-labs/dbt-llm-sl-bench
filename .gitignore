@@ -19,3 +19,9 @@ wheels/
 
 # Node modules
 node_modules/.mcp.env
+
+# Local-only files
+ARCHITECTURE.md
+TODO.md
+diag.excalidraw.png
+diag2.excalidraw.png
