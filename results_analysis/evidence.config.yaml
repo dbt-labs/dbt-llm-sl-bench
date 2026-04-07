@@ -58,6 +58,9 @@ theme:
       light: "#dc2626"
       dark: "#f87171"
 
+deployment:
+  basePath: /dbt-llm-sl-bench
+
 plugins:
   components:
     # This loads all of evidence's core charts and UI components
