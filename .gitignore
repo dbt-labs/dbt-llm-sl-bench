@@ -17,6 +17,7 @@ wheels/
 
 # Data files
 *.db
+!llm_bench_dashboard.db
 *.csv
 *.duckdb
 
