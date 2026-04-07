@@ -12,13 +12,20 @@ wheels/
 # Environment files
 .env
 .envrc
+.mcp.env
+.mcp.json
 
 # Data files
 *.db
 *.csv
+*.duckdb
+
+# Logs
+*.log
+logs/
 
 # Node modules
-node_modules/.mcp.env
+node_modules/
 
 # Local-only files
 ARCHITECTURE.md
