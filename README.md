@@ -176,3 +176,9 @@ pnpm dev
 ```
 
 The dashboard shows accuracy by strategy and model, cost, and timing. It reads directly from `results_analysis/llm_bench.duckdb` — copy or symlink your `llm_bench.db` there, or update `evidence.config.yaml` to point to your database file.
+
+---
+
+## Disclaimer
+
+This repository is provided as-is in support of a blog post. It comes with no SLAs, guarantees, or ongoing support. Use at your own discretion.
