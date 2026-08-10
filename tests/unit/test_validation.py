@@ -40,10 +40,15 @@ class TestValidateConfigs:
         with pytest.raises(ValueError, match="not in the PydanticAI known model registry"):
             validate_configs(configs)
 
+    def test_max_reasoning_effort_openai_passes(self) -> None:
+        """'max' reasoning effort is valid for OpenAI (supported by GPT-5.6+)"""
+        configs = [BaseConfig(model_name="openai:gpt-4o", reasoning_effort="max")]
+        validate_configs(configs)
+
     def test_invalid_reasoning_effort_openai(self) -> None:
         """Invalid reasoning effort for OpenAI fails"""
-        configs = [BaseConfig(model_name="openai:gpt-4o", reasoning_effort="max")]
-        with pytest.raises(ValueError, match='reasoning_effort "max" invalid for OpenAI'):
+        configs = [BaseConfig(model_name="openai:gpt-4o", reasoning_effort="ultra")]
+        with pytest.raises(ValueError, match='reasoning_effort "ultra" invalid for OpenAI'):
             validate_configs(configs)
 
     def test_invalid_reasoning_effort_anthropic(self) -> None:

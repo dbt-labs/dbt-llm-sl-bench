@@ -103,21 +103,44 @@ if __name__ == "__main__":
     # from llm_bench.config import semantic_config
     # sql_answers_list, results_df = run_single_benchmark(semantic_config)
 
-    # GPT-5.3 Codex — thinking-level comparison (5 iterations)
-    model_efforts: list[tuple[str, list[str]]] = [
-        ("openai:gpt-5.3-codex", ["none", "minimal", "low", "medium", "high", "xhigh"]),
+    # Model comparison across all three strategies
+    # reasoning_effort=None means "use the provider's default" for that model
+    models: list[tuple[str, str | None]] = [
+        ("anthropic:claude-sonnet-5", None),
+        ("anthropic:claude-opus-5", None),
+        ("openai:gpt-5.6-luna", None),
+        ("openai:gpt-5.6-terra", "xhigh"),
+        ("openai:gpt-5.6-sol", None),
     ]
 
     example_configs = []
-    for model, efforts in model_efforts:
-        for effort in efforts:
-            for strategy_cls in [SQLConfig, SemanticLayerConfig]:
-                example_configs.append(
-                    strategy_cls(model_name=model, number_of_iterations=5, reasoning_effort=effort)
-                )
+    for model, effort in models:
+        effort_tag = f":effort={effort}" if effort else ""
+        example_configs.append(
+            SQLConfig(
+                model_name=model,
+                ddl_file="ACME_enhanced.ddl",
+                reasoning_effort=effort,
+                config_comment=f"SQL with enhanced DDL{effort_tag}",
+            )
+        )
+        example_configs.append(
+            SemanticLayerConfig(
+                model_name=model,
+                reasoning_effort=effort,
+                config_comment=f"SL with more models created{effort_tag}",
+            )
+        )
+        example_configs.append(
+            MCPConfig(
+                model_name=model,
+                reasoning_effort=effort,
+                config_comment=f"SL with more models created{effort_tag}",
+            )
+        )
 
     # Validate all configs before running
-    validate_configs(example_configs)  # TODO: re-enable once pydantic-ai adds gpt-5.3-codex
+    validate_configs(example_configs)
 
     # Load challenges once and share across all configs (more efficient than loading per thread)
     from llm_bench.utils.challenge_loader import load_challenges_from_ttl

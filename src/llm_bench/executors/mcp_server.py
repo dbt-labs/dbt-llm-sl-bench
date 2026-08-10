@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from pydantic_ai.mcp import MCPServer, MCPServerStdio, MCPServerStreamableHTTP
+from pydantic_ai.mcp import MCPToolset, StdioTransport
+from pydantic_ai.toolsets import AbstractToolset
 
 
 @dataclass
@@ -18,16 +19,19 @@ class MCPServerConfig:
     headers: dict | None = None
     timeout: int = 60  # HTTP timeout in seconds for MCP requests
 
-    def create_server(self) -> Optional["MCPServer"]:
+    def create_server(self) -> Optional["AbstractToolset"]:
         """Create an MCP server instance based on configuration."""
+        toolset: AbstractToolset | None = None
         if self.server_type == "stdio" and self.command:
-            return MCPServerStdio(command=self.command, args=self.args or [], tool_prefix=self.tool_prefix)
-        if self.server_type == "http" and self.url:
-            return MCPServerStreamableHTTP(
-                url=self.url,
-                tool_prefix=self.tool_prefix,
+            toolset = MCPToolset(StdioTransport(command=self.command, args=self.args or []))
+        elif self.server_type == "http" and self.url:
+            toolset = MCPToolset(
+                self.url,
                 headers=self.headers,
-                timeout=float(self.timeout),  # Connection timeout in seconds
+                init_timeout=float(self.timeout),  # Connection timeout in seconds
                 read_timeout=float(self.timeout),  # Read timeout in seconds
             )
-        return None
+
+        if toolset is not None and self.tool_prefix:
+            toolset = toolset.prefixed(self.tool_prefix)
+        return toolset

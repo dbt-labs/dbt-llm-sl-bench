@@ -9,6 +9,7 @@ The questions are an extract from the [ACME Insurance benchmark](https://github.
 ## Pages
 
 - [**Comparing models and thinking effort - Without modeling**](/compare) — Side-by-side accuracy, cost, and latency across models and effort levels. Defaults to the large multi-model comparison run (5 iterations per model).
+- [**Comparing models and thinking effort - With modeling**](/compare-with-modeling) — Same comparison, but with additional dbt models in place so all 11 questions are answerable. Includes both older models (reused single-effort runs) and newer models (fresh effort sweeps).
 - [**Repeated runs on selected models**](/repeated-runs) — Consistency and variance for models run 20 times, compared across without modeling and with modeling configurations.
 - [**Historical Comparison**](/historical) — How results have changed from 2023 to 2026, comparing older and newer models on the same questions.
 
