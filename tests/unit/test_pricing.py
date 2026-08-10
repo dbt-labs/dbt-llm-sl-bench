@@ -69,6 +69,14 @@ class TestResolvePriceId:
         price_ids = {"claude-sonnet-4.3", "claude-sonnet-4.5"}
         assert _resolve_price_id("claude-sonnet-4-6", price_ids) == "claude-sonnet-4.5"
 
+    def test_fallback_matches_dash_versioned_ids_against_single_part_target(self) -> None:
+        """A single-part-version target (e.g. claude-opus-5) must still see dash-versioned
+        candidates like claude-opus-4-8 as the same family, not just single-part ones like
+        claude-opus-4 (regression: this previously silently picked the oldest/most expensive
+        same-family entry instead of the newest one that also qualifies)."""
+        price_ids = {"claude-opus-4", "claude-opus-4-5", "claude-opus-4-8"}
+        assert _resolve_price_id("claude-opus-5", price_ids) == "claude-opus-4-8"
+
 
 @patch("llm_bench.pricing.fetch_prices", return_value=SAMPLE_PRICES)
 class TestCalculateCost:

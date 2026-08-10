@@ -1,6 +1,6 @@
 ---
 title: Repeated runs on selected models
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 Three models — **claude-sonnet-4-6**, **gpt-5.2-2025-12-11**, and **gpt-5.3-codex** — were each run 20 times on the same 11 questions to measure consistency and variance — not just average accuracy, but how much results fluctuate across runs.

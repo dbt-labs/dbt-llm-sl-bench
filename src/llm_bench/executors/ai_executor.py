@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import re
 from dataclasses import asdict
 from typing import Any, Optional
 
@@ -12,6 +13,15 @@ from pydantic_ai.settings import ModelSettings
 
 from llm_bench.config.base import BaseConfig
 from llm_bench.executors.mcp_server import MCPServerConfig
+
+# Some models wrap their output in a markdown code fence despite the system prompt
+# explicitly asking for raw SQL, which breaks execution outright (the backend SQL
+# parser chokes on the literal backticks). Strip a leading/trailing fence defensively.
+_CODE_FENCE_RE = re.compile(r"^\s*```(?:\w+)?\n?|\n?```\s*$")
+
+
+def _strip_code_fence(text: str) -> str:
+    return _CODE_FENCE_RE.sub("", text)
 
 
 class AIExecutor:
@@ -83,7 +93,11 @@ class AIExecutor:
 
         # Store usage information if available
         if hasattr(result, "usage") and result.usage:
-            self.last_usage = asdict(result.usage())
+            self.last_usage = asdict(result.usage)
+            # pydantic-ai's own `cost` field is a Decimal, which isn't JSON-serializable;
+            # this app computes cost separately via its own pricing table (see pricing.py).
+            if self.last_usage.get("cost") is not None:
+                self.last_usage["cost"] = float(self.last_usage["cost"])
             logger.debug(f"[AIExecutor] Token usage captured: {self.last_usage}")
         else:
             self.last_usage = None
@@ -97,8 +111,9 @@ class AIExecutor:
                 logger.debug(f"[AIExecutor] Resolved model name: {self.last_model_name}")
                 break
 
-        logger.debug(f"[AIExecutor] Execution complete, output length: {len(result.output)} characters")
-        return result.output
+        output = _strip_code_fence(result.output)
+        logger.debug(f"[AIExecutor] Execution complete, output length: {len(output)} characters")
+        return output
 
     def get_token_usage(self) -> dict[str, Any] | None:
         """Get token usage from the last executed prompt."""

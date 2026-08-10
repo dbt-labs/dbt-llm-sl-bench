@@ -5,4 +5,7 @@ select 1771925711180 as batch_id, 'compare'        as page, 'without_modeling' a
 select 1771947220583,              'repeated_runs', 'without_modeling'                         union all
 select 1772040337760,              'repeated_runs', 'without_modeling'                         union all
 select 1771950920101,              'repeated_runs', 'with_modeling'                            union all
-select 1772035331932,              'repeated_runs', 'with_modeling'
+select 1772035331932,              'repeated_runs', 'with_modeling'                             union all
+select 1771950920101,              'compare_with_modeling', 'with_modeling'                     union all
+select 1772035331932,              'compare_with_modeling', 'with_modeling'                     union all
+select 1786382627626,              'compare_with_modeling', 'with_modeling'

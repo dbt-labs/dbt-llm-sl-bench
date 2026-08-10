@@ -35,6 +35,15 @@ class EnvSettings(BaseSettings):
     # Common MCP configuration
     mcp_timeout: int = Field(default=60, description="Timeout for MCP requests in seconds")
     mcp_tool_prefix: str | None = Field(default=None, description="Optional tool prefix for MCP tools")
+    mcp_disable_toolsets: str = Field(
+        default="sql,discovery,dbt_cli,admin_api,dbt_codegen,dbt_lsp,product_docs,mcp_server_metadata",
+        description=(
+            "Comma-separated dbt MCP toolsets to disable via the x-dbt-disable-toolsets header "
+            "(HTTP server type only). Defaults to everything except semantic_layer, so the mcp "
+            "strategy is scoped to the same capability the sql/semantic_layer strategies test. "
+            "Set to empty string to expose all toolsets."
+        ),
+    )
 
     def create_mcp_server_config(self) -> "MCPServerConfig":
         """Create MCPServerConfig from environment settings."""
@@ -67,6 +76,8 @@ class EnvSettings(BaseSettings):
             headers["Authorization"] = f"token {self.dbt_sl_service_token}"
         if self.environment_id:
             headers["x-dbt-prod-environment-id"] = self.environment_id
+        if self.mcp_disable_toolsets:
+            headers["x-dbt-disable-toolsets"] = self.mcp_disable_toolsets
 
         return MCPServerConfig(
             server_type="http",

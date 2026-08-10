@@ -58,31 +58,55 @@ def fetch_prices() -> dict[str, PriceEntry]:
     return _prices_cache
 
 
-def _find_closest_version(normalized: str, price_ids: set[str]) -> str | None:
-    """Find the pricing ID with the highest version ≤ target in the same model family.
+_NUMERIC_TOKEN_RE = re.compile(r"^\d+(?:\.\d+)?$")
 
-    Both the query and each pricing ID are compared in normalized form (trailing
-    dash-digit converted to dot-digit) so that e.g. "claude-opus-4-5" is treated
-    as version 4.5 in the "claude-opus-" family.
+
+def _parse_family_version(name: str) -> tuple[str, float] | None:
+    """Split a dash-separated model/pricing id into (family, version).
+
+    Trailing dash-separated numeric tokens are collected as successive version parts, so
+    both single- and multi-segment version numbers resolve to the same family regardless of
+    how many dashes they use, e.g.:
+      "claude-opus-5"   -> ("claude-opus", 5.0)
+      "claude-opus-4"   -> ("claude-opus", 4.0)
+      "claude-opus-4-5" -> ("claude-opus", 4.5)
+      "claude-sonnet-4.5" -> ("claude-sonnet", 4.5)  (already-dotted ids from the source data)
+    Returns None if the id has no trailing numeric version (e.g. "claude-3-opus").
     """
-    m = re.match(r"^(.*?)(\d+(?:\.\d+)?)$", normalized)
-    if not m:
+    parts = name.split("-")
+    version_tokens: list[str] = []
+    while parts and _NUMERIC_TOKEN_RE.match(parts[-1]):
+        version_tokens.insert(0, parts.pop())
+    if not version_tokens or not parts:
         return None
-    prefix, version_str = m.group(1), m.group(2)
-    target_version = float(version_str)
+    if len(version_tokens) == 1:
+        version_str = version_tokens[0]
+    else:
+        version_str = version_tokens[0] + "." + ".".join(t.replace(".", "") for t in version_tokens[1:])
+    try:
+        version = float(version_str)
+    except ValueError:
+        return None
+    return "-".join(parts), version
+
+
+def _find_closest_version(normalized: str, price_ids: set[str]) -> str | None:
+    """Find the pricing ID with the highest version ≤ target in the same model family."""
+    target = _parse_family_version(normalized)
+    if target is None:
+        return None
+    target_family, target_version = target
 
     best_id: str | None = None
     best_version = -1.0
     for pid in price_ids:
-        norm_pid = re.sub(r"-(\d+)$", r".\1", pid)
-        m2 = re.match(r"^(.*?)(\d+(?:\.\d+)?)$", norm_pid)
-        if not m2:
+        parsed = _parse_family_version(pid)
+        if parsed is None:
             continue
-        if m2.group(1) == prefix:
-            v = float(m2.group(2))
-            if v <= target_version and v > best_version:
-                best_version = v
-                best_id = pid  # Return the original pricing ID
+        family, version = parsed
+        if family == target_family and version <= target_version and version > best_version:
+            best_version = version
+            best_id = pid
     return best_id
 
 
@@ -115,7 +139,7 @@ def _resolve_price_id(model_name: str, price_ids: set[str]) -> str | None:
         return normalized
 
     # 4. Closest-version fallback: find the highest version ≤ target in the same family
-    fallback = _find_closest_version(normalized, price_ids)
+    fallback = _find_closest_version(stripped, price_ids)
     if fallback is not None:
         logger.info(f"No exact pricing match for '{model_name}'; using '{fallback}' instead")
         return fallback

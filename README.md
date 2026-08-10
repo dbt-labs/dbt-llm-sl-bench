@@ -2,6 +2,11 @@
 
 An interactive dashboard with results is available at **https://dbt-labs.github.io/dbt-llm-sl-bench/**
 
+## Updates
+
+- **March 2026**: Initial benchmark run comparing GPT and Claude models across the `sql`, `semantic_layer`, and `mcp` strategies, with and without additional dbt modeling.
+- **August 2026**: Added Claude Sonnet 5, Claude Opus 5, and GPT-5.6 Luna/Terra/Sol, with a thinking-effort sweep for the new models and an updated "with modeling" comparison page.
+
 Benchmark for comparing how well LLMs answer business questions using three different strategies:
 
 | Strategy | How it works |

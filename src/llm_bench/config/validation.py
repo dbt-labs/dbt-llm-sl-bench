@@ -9,7 +9,7 @@ from llm_bench.config.base import BaseConfig
 
 KNOWN_MODELS: set[str] = set(get_args(KnownModelName.__value__))
 
-OPENAI_REASONING_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh"}
+OPENAI_REASONING_EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh", "max"}
 ANTHROPIC_REASONING_EFFORTS = {"low", "medium", "high", "max"}
 
 
