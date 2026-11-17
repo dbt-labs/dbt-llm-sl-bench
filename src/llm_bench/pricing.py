@@ -27,6 +27,9 @@ _LOCAL_PRICES: dict[str, PriceEntry] = {
 
 _prices_cache: dict[str, PriceEntry] | None = None
 
+# Anthropic bills 5-minute prompt-cache writes at 1.25x the base input price.
+_ANTHROPIC_CACHE_WRITE_MULTIPLIER = 1.25
+
 
 def fetch_prices() -> dict[str, PriceEntry]:
     """Fetch pricing data from llm-prices.com. Caches result in module-level variable."""
@@ -170,16 +173,21 @@ def calculate_cost(model_name: str, token_usage: dict | None) -> float | None:
         return None
 
     entry = prices[price_id]
-    input_tokens = token_usage.get("input_tokens", 0)
-    output_tokens = token_usage.get("output_tokens", 0)
-    cache_read_tokens = token_usage.get("cache_read_tokens", 0)
+    input_tokens = token_usage.get("input_tokens", 0) or 0
+    output_tokens = token_usage.get("output_tokens", 0) or 0
+    cache_read_tokens = token_usage.get("cache_read_tokens", 0) or 0
+    cache_write_tokens = token_usage.get("cache_write_tokens", 0) or 0
 
-    # Cached input tokens are charged at the cached rate (if available), not the standard input rate
-    # The input_tokens from PydanticAI already excludes cache_read_tokens
-    cost = (input_tokens * entry.input + output_tokens * entry.output) / 1_000_000
+    # PydanticAI's input_tokens INCLUDES cache reads and cache writes, so only the remainder is
+    # charged at the full input rate. Cache reads get the cached rate (if known), and Anthropic
+    # charges its (5-minute) cache writes at 1.25x the input rate. OpenAI has no write premium.
+    uncached_tokens = max(input_tokens - cache_read_tokens - cache_write_tokens, 0)
+    cached_rate = entry.input_cached if entry.input_cached is not None else entry.input
+    write_rate = entry.input * (_ANTHROPIC_CACHE_WRITE_MULTIPLIER if entry.vendor == "anthropic" else 1.0)
 
-    if cache_read_tokens:
-        cached_rate = entry.input_cached if entry.input_cached is not None else entry.input
-        cost += (cache_read_tokens * cached_rate) / 1_000_000
-
-    return cost
+    return (
+        uncached_tokens * entry.input
+        + cache_read_tokens * cached_rate
+        + cache_write_tokens * write_rate
+        + output_tokens * entry.output
+    ) / 1_000_000

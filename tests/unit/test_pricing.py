@@ -89,10 +89,25 @@ class TestCalculateCost:
         assert cost == pytest.approx(0.0075)
 
     def test_cost_with_cached_tokens(self, _mock_fetch) -> None:
+        """PydanticAI's input_tokens includes cache reads, so only the uncached rest is full price."""
         token_usage = {"input_tokens": 800, "output_tokens": 200, "cache_read_tokens": 500}
         cost = calculate_cost("claude-3.5-haiku", token_usage)
-        # (800 * 0.8 + 200 * 4.0) / 1_000_000 + (500 * 0.08) / 1_000_000 = 0.00148
-        assert cost == pytest.approx(0.00148)
+        # (300 * 0.8 + 500 * 0.08 + 200 * 4.0) / 1_000_000 = 0.00108
+        assert cost == pytest.approx(0.00108)
+
+    def test_anthropic_cache_writes_cost_more_than_input(self, _mock_fetch) -> None:
+        """Anthropic charges 5-minute cache writes at 1.25x the input rate."""
+        token_usage = {"input_tokens": 1000, "output_tokens": 0, "cache_read_tokens": 500, "cache_write_tokens": 400}
+        cost = calculate_cost("claude-3.5-haiku", token_usage)
+        # (100 * 0.8 + 400 * 0.8 * 1.25 + 500 * 0.08) / 1_000_000 = 0.00052
+        assert cost == pytest.approx(0.00052)
+
+    def test_openai_cache_writes_cost_the_input_rate(self, _mock_fetch) -> None:
+        """OpenAI has no cache-write premium."""
+        token_usage = {"input_tokens": 1000, "output_tokens": 0, "cache_read_tokens": 0, "cache_write_tokens": 400}
+        cost = calculate_cost("openai:gpt-4o", token_usage)
+        # 1000 * 2.5 / 1_000_000 = 0.0025
+        assert cost == pytest.approx(0.0025)
 
     def test_returns_none_when_token_usage_is_none(self, _mock_fetch) -> None:
         assert calculate_cost("openai:gpt-4o", None) is None
@@ -106,8 +121,8 @@ class TestCalculateCost:
         token_usage = {"input_tokens": 800, "output_tokens": 200, "cache_read_tokens": 500}
         cost = calculate_cost("anthropic:claude-sonnet-4-5", token_usage)
         # claude-sonnet-4.5 has input=3.0, output=15.0, input_cached=None
-        # (800 * 3.0 + 200 * 15.0) / 1_000_000 + (500 * 3.0) / 1_000_000 = 0.006900
-        assert cost == pytest.approx(0.0069)
+        # (300 * 3.0 + 500 * 3.0 + 200 * 15.0) / 1_000_000 = 0.0054
+        assert cost == pytest.approx(0.0054)
 
     def test_version_normalization_in_cost(self, _mock_fetch) -> None:
         """End-to-end: PydanticAI-style name resolves and calculates cost."""

@@ -35,6 +35,13 @@ class EnvSettings(BaseSettings):
     # Common MCP configuration
     mcp_timeout: int = Field(default=60, description="Timeout for MCP requests in seconds")
     mcp_tool_prefix: str | None = Field(default=None, description="Optional tool prefix for MCP tools")
+    mcp_max_retries: int | None = Field(
+        default=None,
+        description=(
+            "How many times an MCP tool may return an error before the agent run fails. "
+            "Unset keeps pydantic-ai's default of 1."
+        ),
+    )
     mcp_disable_toolsets: str = Field(
         default="sql,discovery,dbt_cli,admin_api,dbt_codegen,dbt_lsp,product_docs,mcp_server_metadata",
         description=(
@@ -62,6 +69,7 @@ class EnvSettings(BaseSettings):
                 args=self.mcp_stdio_args or [],
                 tool_prefix=self.mcp_tool_prefix,
                 timeout=self.mcp_timeout,
+                max_retries=self.mcp_max_retries,
             )
         # http
         if not self.mcp_http_url:
@@ -85,6 +93,7 @@ class EnvSettings(BaseSettings):
             headers=headers,
             tool_prefix=self.mcp_tool_prefix,
             timeout=self.mcp_timeout,
+            max_retries=self.mcp_max_retries,
         )
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
