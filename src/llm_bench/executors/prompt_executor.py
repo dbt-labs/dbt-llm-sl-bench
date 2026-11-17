@@ -24,16 +24,27 @@ def _create_model(model_name: str) -> Model:
 
 
 def _build_model_settings(config: BaseConfig) -> ModelSettings | None:
-    """Build provider-specific model settings from config."""
+    """Build provider-specific model settings from config.
+
+    Anthropic prompt caching is opt-in, so it's always enabled here: the MCP strategies resend the
+    tool definitions, instructions and growing history on every turn. OpenAI caches automatically.
+    """
     effort = config.reasoning_effort
+    provider = config.model_name.split(":")[0]
+
+    if provider == "anthropic":
+        settings = AnthropicModelSettings(
+            anthropic_cache=True,
+            anthropic_cache_tool_definitions=True,
+            anthropic_cache_instructions=True,
+        )
+        if effort is not None:
+            settings["anthropic_effort"] = effort
+        return settings
     if effort is None:
         return None
-
-    provider = config.model_name.split(":")[0]
     if provider == "openai":
         return OpenAIResponsesModelSettings(openai_reasoning_effort=effort)
-    if provider == "anthropic":
-        return AnthropicModelSettings(anthropic_effort=effort)
     return None
 
 
